@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -25,6 +27,8 @@ import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
+import org.elasticsearch.client.tasks.TaskSubmissionResponse;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -37,8 +41,8 @@ public class ESIndexBuilder {
   private final RestHighLevelClient searchClient;
   private final int numShards;
   private final int numReplicas;
+  private final int numRetries;
 
-  private static final int NUM_RETRIES = 3;
   private static final List<String> SETTINGS_TO_COMPARE = ImmutableList.of("number_of_shards", "number_of_replicas");
 
   public void buildIndex(String indexName, Map<String, Object> mappings, Map<String, Object> settings)
@@ -66,21 +70,33 @@ public class ESIndexBuilder {
         .get()
         .getSourceAsMap();
 
-    MapDifference<String, Object> mappingsDiff = Maps.difference(mappings, oldMappings);
+    MapDifference<String, Object> mappingsDiff = Maps.difference((Map<String, Object>) oldMappings.get("properties"),
+        (Map<String, Object>) mappings.get("properties"));
 
     Settings oldSettings = searchClient.indices()
         .getSettings(new GetSettingsRequest().indices(indexName), RequestOptions.DEFAULT)
         .getIndexToSettings()
         .valuesIt()
         .next();
+    boolean isSettingsEqual = equals(finalSettings, oldSettings);
 
-    // If there are no updates to mappings, return
-    if (mappingsDiff.areEqual() && equals(finalSettings, oldSettings)) {
+    // If there are no updates to mappings and settings, return
+    if (mappingsDiff.areEqual() && isSettingsEqual) {
       log.info("No updates to index {}", indexName);
       return;
     }
 
-    if (!mappingsDiff.areEqual()) {
+    // If there are no updates to settings, and there are only pure additions to mappings (no updates to existing fields),
+    // there is no need to reindex. Just update mappings
+    if (isSettingsEqual && isPureAddition(mappingsDiff)) {
+      log.info("New fields have been added to index {}. Updating index in place", indexName);
+      PutMappingRequest request = new PutMappingRequest(indexName).source(mappings);
+      searchClient.indices().putMapping(request, RequestOptions.DEFAULT);
+      log.info("Updated index {} with new mappings", indexName);
+      return;
+    }
+
+    if (!mappingsDiff.entriesDiffering().isEmpty()) {
       log.info("There's diff between new mappings (left) and old mappings (right): {}", mappingsDiff.toString());
     } else {
       log.info("There's an update to settings");
@@ -89,9 +105,37 @@ public class ESIndexBuilder {
     String tempIndexName = indexName + "_" + System.currentTimeMillis();
     createIndex(tempIndexName, mappings, finalSettings);
     try {
-      searchClient.reindex(
-          new ReindexRequest().setSourceIndices(indexName).setDestIndex(tempIndexName),
-          RequestOptions.DEFAULT);
+      TaskSubmissionResponse reindexTask;
+      reindexTask =
+          searchClient.submitReindexTask(new ReindexRequest().setSourceIndices(indexName).setDestIndex(tempIndexName),
+              RequestOptions.DEFAULT);
+
+      // wait up to 5 minutes for the task to complete
+      long startTime = System.currentTimeMillis();
+      long millisToWait60Minutes = 1000 * 60 * 60;
+      Boolean reindexTaskCompleted = false;
+
+      while ((System.currentTimeMillis() - startTime) < millisToWait60Minutes) {
+        log.info("Reindexing from {} to {} in progress...", indexName, tempIndexName);
+        ListTasksRequest request = new ListTasksRequest();
+        ListTasksResponse tasks = searchClient.tasks().list(request, RequestOptions.DEFAULT);
+        if (tasks.getTasks().stream().noneMatch(task -> task.getTaskId().toString().equals(reindexTask.getTask()))) {
+          log.info("Reindexing {} to {} task has completed, will now check if reindex was successful", indexName,
+              tempIndexName);
+          reindexTaskCompleted = true;
+          break;
+        }
+        try {
+          Thread.sleep(5000);
+        } catch (InterruptedException e) {
+          log.info("Trouble sleeping while reindexing {} to {}: Exception {}. Retrying...", indexName, tempIndexName,
+              e.toString());
+        }
+      }
+      if (!reindexTaskCompleted) {
+        throw new RuntimeException(
+            String.format("Reindex from %s to %s failed-- task exceeded 60 minute limit", indexName, tempIndexName));
+      }
     } catch (Exception e) {
       log.info("Failed to reindex {} to {}: Exception {}", indexName, tempIndexName, e.toString());
       searchClient.indices().delete(new DeleteIndexRequest().indices(tempIndexName), RequestOptions.DEFAULT);
@@ -102,7 +146,7 @@ public class ESIndexBuilder {
     // There can be some delay between the reindex finishing and count being fully up to date, so try multiple times
     long originalCount = 0;
     long reindexedCount = 0;
-    for (int i = 0; i < NUM_RETRIES; i++) {
+    for (int i = 0; i < this.numRetries; i++) {
       // Check if reindex succeeded by comparing document counts
       originalCount = getCount(indexName);
       reindexedCount = getCount(tempIndexName);
@@ -161,6 +205,11 @@ public class ESIndexBuilder {
     log.info("Created index {}", indexName);
   }
 
+  private boolean isPureAddition(MapDifference<String, Object> mapDifference) {
+    return !mapDifference.areEqual() && mapDifference.entriesDiffering().isEmpty()
+        && !mapDifference.entriesOnlyOnRight().isEmpty();
+  }
+
   private boolean equals(Map<String, Object> newSettings, Settings oldSettings) {
     if (!newSettings.containsKey("index")) {
       return true;
@@ -186,6 +235,11 @@ public class ESIndexBuilder {
     }
 
     for (String key : newSettings.keySet()) {
+      // Skip urn stop filter, as adding new entities will cause this filter to change
+      // No need to reindex every time a new entity is added
+      if (key.equals("urn_stop_filter")) {
+        continue;
+      }
       if (newSettings.get(key) instanceof Map) {
         if (!equalsGroup((Map<String, Object>) newSettings.get(key), oldSettings.getByPrefix(key + "."))) {
           return false;

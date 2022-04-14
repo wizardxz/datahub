@@ -1,14 +1,18 @@
 package com.linkedin.datahub.graphql.resolvers.config;
 
-import com.datahub.authorization.Authorizer;
+import com.datahub.authorization.AuthorizationConfiguration;
 import com.linkedin.datahub.graphql.QueryContext;
 import com.linkedin.datahub.graphql.generated.AnalyticsConfig;
 import com.linkedin.datahub.graphql.generated.AppConfig;
 import com.linkedin.datahub.graphql.generated.EntityType;
 import com.linkedin.datahub.graphql.generated.IdentityManagementConfig;
+import com.linkedin.datahub.graphql.generated.LineageConfig;
+import com.linkedin.datahub.graphql.generated.ManagedIngestionConfig;
 import com.linkedin.datahub.graphql.generated.PoliciesConfig;
 import com.linkedin.datahub.graphql.generated.Privilege;
 import com.linkedin.datahub.graphql.generated.ResourcePrivileges;
+import com.linkedin.metadata.config.IngestionConfiguration;
+import com.linkedin.metadata.version.GitVersion;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.concurrent.CompletableFuture;
@@ -20,10 +24,23 @@ import java.util.stream.Collectors;
  */
 public class AppConfigResolver implements DataFetcher<CompletableFuture<AppConfig>> {
 
-  private final Boolean _isAnalyticsEnabled;
+  private final GitVersion _gitVersion;
+  private final boolean _isAnalyticsEnabled;
+  private final IngestionConfiguration _ingestionConfiguration;
+  private final AuthorizationConfiguration _authorizationConfiguration;
+  private final boolean _supportsImpactAnalysis;
 
-  public AppConfigResolver(final Boolean isAnalyticsEnabled) {
+  public AppConfigResolver(
+      final GitVersion gitVersion,
+      final boolean isAnalyticsEnabled,
+      final IngestionConfiguration ingestionConfiguration,
+      final AuthorizationConfiguration authorizationConfiguration,
+      final boolean supportsImpactAnalysis) {
+    _gitVersion = gitVersion;
     _isAnalyticsEnabled = isAnalyticsEnabled;
+    _ingestionConfiguration = ingestionConfiguration;
+    _authorizationConfiguration = authorizationConfiguration;
+    _supportsImpactAnalysis = supportsImpactAnalysis;
   }
 
   @Override
@@ -33,13 +50,17 @@ public class AppConfigResolver implements DataFetcher<CompletableFuture<AppConfi
 
     final AppConfig appConfig = new AppConfig();
 
+    appConfig.setAppVersion(_gitVersion.getVersion());
+
+    final LineageConfig lineageConfig = new LineageConfig();
+    lineageConfig.setSupportsImpactAnalysis(_supportsImpactAnalysis);
+    appConfig.setLineageConfig(lineageConfig);
+
     final AnalyticsConfig analyticsConfig = new AnalyticsConfig();
     analyticsConfig.setEnabled(_isAnalyticsEnabled);
 
     final PoliciesConfig policiesConfig = new PoliciesConfig();
-
-    boolean policiesEnabled = Authorizer.AuthorizationMode.DEFAULT.equals(context.getAuthorizer().mode());
-    policiesConfig.setEnabled(policiesEnabled);
+    policiesConfig.setEnabled(_authorizationConfiguration.getDefaultAuthorizer().isEnabled());
 
     policiesConfig.setPlatformPrivileges(com.linkedin.metadata.authorization.PoliciesConfig.PLATFORM_PRIVILEGES
         .stream()
@@ -55,9 +76,12 @@ public class AppConfigResolver implements DataFetcher<CompletableFuture<AppConfi
     final IdentityManagementConfig identityManagementConfig = new IdentityManagementConfig();
     identityManagementConfig.setEnabled(true); // Identity Management always enabled. TODO: Understand if there's a case where this should change.
 
+    final ManagedIngestionConfig ingestionConfig = new ManagedIngestionConfig();
+    ingestionConfig.setEnabled(_ingestionConfiguration.isEnabled());
     appConfig.setAnalyticsConfig(analyticsConfig);
     appConfig.setPoliciesConfig(policiesConfig);
     appConfig.setIdentityManagementConfig(identityManagementConfig);
+    appConfig.setManagedIngestionConfig(ingestionConfig);
 
     return CompletableFuture.completedFuture(appConfig);
   }
@@ -96,6 +120,16 @@ public class AppConfigResolver implements DataFetcher<CompletableFuture<AppConfi
       return EntityType.DATA_JOB;
     } else if (com.linkedin.metadata.authorization.PoliciesConfig.TAG_PRIVILEGES.getResourceType().equals(resourceType)) {
       return EntityType.TAG;
+    } else if (com.linkedin.metadata.authorization.PoliciesConfig.GLOSSARY_TERM_PRIVILEGES.getResourceType().equals(resourceType)) {
+      return EntityType.GLOSSARY_TERM;
+    } else if (com.linkedin.metadata.authorization.PoliciesConfig.DOMAIN_PRIVILEGES.getResourceType().equals(resourceType)) {
+      return EntityType.DOMAIN;
+    } else if (com.linkedin.metadata.authorization.PoliciesConfig.CONTAINER_PRIVILEGES.getResourceType().equals(resourceType)) {
+      return EntityType.CONTAINER;
+    } else if (com.linkedin.metadata.authorization.PoliciesConfig.CORP_GROUP_PRIVILEGES.getResourceType().equals(resourceType)) {
+      return EntityType.CORP_GROUP;
+    } else if (com.linkedin.metadata.authorization.PoliciesConfig.CORP_USER_PRIVILEGES.getResourceType().equals(resourceType)) {
+      return EntityType.CORP_USER;
     } else {
       return null;
     }

@@ -18,16 +18,24 @@ import {
     OwnershipUpdate,
     SchemaMetadata,
     StringMapEntry,
+    EntityLineageResult,
+    Domain,
+    SubTypes,
+    Container,
+    Health,
+    Status,
+    Deprecation,
 } from '../../../types.generated';
 import { FetchedEntity } from '../../lineage/types';
 
 export type EntityTab = {
     name: string;
-    component: React.FunctionComponent;
+    component: React.FunctionComponent<{ properties?: any }>;
     display?: {
         visible: (GenericEntityProperties, T) => boolean; // Whether the tab is visible on the UI. Defaults to true.
         enabled: (GenericEntityProperties, T) => boolean; // Whether the tab is enabled on the UI. Defaults to true.
     };
+    properties?: any;
 };
 
 export type EntitySidebarSection = {
@@ -41,12 +49,14 @@ export type EntitySidebarSection = {
 export type GenericEntityProperties = {
     urn?: string;
     name?: Maybe<string>;
-    properties?: {
-        description?: string;
-    };
+    properties?: Maybe<{
+        description?: Maybe<string>;
+        qualifiedName?: Maybe<string>;
+    }>;
     globalTags?: Maybe<GlobalTags>;
     glossaryTerms?: Maybe<GlossaryTerms>;
     ownership?: Maybe<Ownership>;
+    domain?: Maybe<Domain>;
     platform?: Maybe<DataPlatform>;
     customProperties?: Maybe<StringMapEntry[]>;
     institutionalMemory?: Maybe<InstitutionalMemory>;
@@ -58,6 +68,14 @@ export type GenericEntityProperties = {
     editableSchemaMetadata?: Maybe<EditableSchemaMetadata>;
     editableProperties?: Maybe<DatasetEditableProperties>;
     autoRenderAspects?: Maybe<Array<RawAspect>>;
+    upstream?: Maybe<EntityLineageResult>;
+    downstream?: Maybe<EntityLineageResult>;
+    subTypes?: Maybe<SubTypes>;
+    entityCount?: number;
+    container?: Maybe<Container>;
+    health?: Maybe<Health>;
+    status?: Maybe<Status>;
+    deprecation?: Maybe<Deprecation>;
 };
 
 export type GenericEntityUpdate = {
@@ -86,7 +104,7 @@ export type EntityContextType = {
     entityType: EntityType;
     entityData: GenericEntityProperties | null;
     baseEntity: any;
-    updateEntity: UpdateEntityType<any>;
+    updateEntity?: UpdateEntityType<any> | null;
     routeToTab: (params: { tabName: string; tabParams?: Record<string, any>; method?: 'push' | 'replace' }) => void;
     refetch: () => Promise<any>;
     lineage: FetchedEntity | undefined;
