@@ -1,0 +1,28 @@
+[
+  {
+    "auditHeader": null,
+    "entityType": "thriftEnumType",
+    "entityUrn": "urn:li:thriftEnumType:com.company.TweetType",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "thriftEnumTypeKey",
+    "aspect": {
+      "value": "{\"name\": \"TweetType\"}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  },
+  {
+    "auditHeader": null,
+    "entityType": "thriftEnumType",
+    "entityUrn": "urn:li:thriftEnumType:com.company.TweetType",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "thriftEnumTypeProperties",
+    "aspect": {
+      "value": "{\"items\": [{\"key\": \"TWEET\"}, {\"key\": \"RETWEET\", \"value\": {\"int\": 2}}, {\"key\": \"DM\", \"value\": {\"int\": 10}}, {\"key\": \"REPLY\"}], \"namespace_\": {\"java\": \"com.company\"}}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  }
+]

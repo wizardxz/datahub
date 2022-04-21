@@ -1,0 +1,13 @@
+---
+# see https://datahubproject.io/docs/metadata-ingestion/source_docs/file for complete documentation
+source:
+  type: "thrift"
+  config:
+    filename: "/home/zxu/code/thrift-schemas"
+    thrift_paths: ["/home/zxu/code/thrift-schemas/commons/thrift", "/home/zxu/code/thrift-schemas/schemas/thrift"]
+    # filename: "/home/zxu/code/thrift-schemas/schemas/thrift/goldpick_service.thrift"
+    # filename: "/home/zxu/code/thrift-schemas/schemas/thrift/ads_reporting_columns.thrift"
+
+# see https://datahubproject.io/docs/metadata-ingestion/sink_docs/datahub for complete documentation
+sink:
+  type: "console"

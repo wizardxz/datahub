@@ -63,3 +63,6 @@ metadata-ingestion/generated/**
 docs/generated/
 tmp*
 temp*
+
+# antlr
+.antlr

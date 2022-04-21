@@ -1,0 +1,13 @@
+---
+# see https://datahubproject.io/docs/metadata-ingestion/source_docs/file for complete documentation
+source:
+  type: "thrift"
+  config:
+    # filename: "/home/zxu/code/thrift-schemas"
+    thrift_paths: ["/home/zxu/code/thrift-schemas/commons/thrift", "/home/zxu/code/thrift-schemas/schemas/thrift"]
+    filename: "/home/zxu/code/magnus/src/pinterest.com/schemas"
+# see https://datahubproject.io/docs/metadata-ingestion/sink_docs/datahub for complete documentation
+sink:
+  type: "datahub-rest"
+  config:
+    server: "http://localhost:8080"

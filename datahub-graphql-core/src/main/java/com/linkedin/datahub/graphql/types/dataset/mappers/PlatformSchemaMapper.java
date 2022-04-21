@@ -59,6 +59,10 @@ public class PlatformSchemaMapper implements ModelMapper<SchemaMetadata.Platform
             final TableSchema otherTableSchema = new TableSchema();
             otherTableSchema.setSchema(input.getOtherSchema().getRawSchema());
             result = otherTableSchema;
+        } else if (input.isThriftSchema()) {
+            final TableSchema otherTableSchema = new TableSchema();
+            otherTableSchema.setSchema(input.getThriftSchema().getRawSchema());
+            result = otherTableSchema;
         } else {
             throw new RuntimeException(String.format("Unrecognized platform schema type %s provided", input.memberType().getType().name()));
         }

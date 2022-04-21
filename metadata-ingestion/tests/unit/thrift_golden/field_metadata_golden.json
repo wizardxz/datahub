@@ -1,0 +1,15 @@
+[
+  {
+    "auditHeader": null,
+    "entityType": "dataset",
+    "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.Foo10,PROD)",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "schemaMetadata",
+    "aspect": {
+      "value": "{\"schemaName\": \"Foo10\", \"platform\": \"urn:li:dataPlatform:thrift\", \"version\": 0, \"created\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"lastModified\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"hash\": \"\", \"platformSchema\": {\"com.linkedin.schema.ThriftSchema\": {\"rawSchema\": \"structFoo10{1:i64bar=1(order=2)2:i64constBar=constants.threshold(stage=\\\"prod\\\")3:doublefloatBar=3.04:stringstringBar=\\\"hello\\\"}\", \"filename\": \"./tests/unit/thrift_files/field_metadata.thrift\", \"fields\": [{\"name\": \"bar\", \"index\": 1, \"hyperType\": [{\"com.linkedin.schema.HyperTypeTextToken\": {\"text\": \"i64\"}}], \"default\": {\"float\": 1}, \"annotations\": [{\"key\": \"order\", \"value\": {\"int\": 2}}]}, {\"name\": \"constBar\", \"index\": 2, \"hyperType\": [{\"com.linkedin.schema.HyperTypeTextToken\": {\"text\": \"i64\"}}], \"default\": {\"float\": -100}, \"annotations\": [{\"key\": \"stage\", \"value\": {\"string\": \"prod\"}}]}, {\"name\": \"floatBar\", \"index\": 3, \"hyperType\": [{\"com.linkedin.schema.HyperTypeTextToken\": {\"text\": \"double\"}}], \"default\": {\"float\": 3.0}}, {\"name\": \"stringBar\", \"index\": 4, \"hyperType\": [{\"com.linkedin.schema.HyperTypeTextToken\": {\"text\": \"string\"}}], \"default\": {\"string\": \"hello\"}}], \"namespace_\": {\"java\": \"com.company\"}}}, \"fields\": [{\"fieldPath\": \"bar\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"i64\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"constBar\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"i64\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"floatBar\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"double\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"stringBar\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.StringType\": {}}}, \"nativeDataType\": \"string\", \"recursive\": false, \"isPartOfKey\": false}]}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  }
+]
