@@ -182,6 +182,7 @@ plugins: Dict[str, Set[str]] = {
         # - 0.6.12 adds support for Spark Thrift Server
         "acryl-pyhive[hive]>=0.6.12"
     },
+    "thrift": {"antlr4-python3-runtime"},
     "kafka": kafka_common,
     "kafka-connect": sql_common | {"requests", "JPype1"},
     "ldap": {"python-ldap>=2.4"},
@@ -233,6 +234,7 @@ plugins: Dict[str, Set[str]] = {
     "starburst-trino-usage": sql_common | usage_common | trino,
     "nifi": {"requests", "packaging"},
     "powerbi": {"orderedset"} | microsoft_common,
+    # "thrift": {"antlr4-python3-runtime"}
 }
 
 all_exclude_plugins: Set[str] = {
@@ -314,6 +316,7 @@ base_dev_requirements = {
             "tableau",
             "trino",
             "hive",
+            "thrift",
             "starburst-trino-usage",
             "powerbi",
             # airflow is added below
@@ -354,6 +357,7 @@ full_test_dev_requirements = {
             "druid",
             "feast",
             "hive",
+            "thrift",
             "ldap",
             "mongodb",
             "mssql",
@@ -416,6 +420,7 @@ entry_points = {
         "nifi = datahub.ingestion.source.nifi:NifiSource",
         "powerbi = datahub.ingestion.source.powerbi:PowerBiDashboardSource",
         "presto-on-hive = datahub.ingestion.source.sql.presto_on_hive:PrestoOnHiveSource",
+        "thrift = datahub.ingestion.source.thrift:ThriftSource"
     ],
     "datahub.ingestion.sink.plugins": [
         "file = datahub.ingestion.sink.file:FileSink",
