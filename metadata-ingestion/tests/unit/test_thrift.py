@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 import json
-from typing import Callable, List
+from typing import Any, Callable, Dict, List
 
 from freezegun import freeze_time
 
@@ -13,8 +14,10 @@ FROZEN_TIME = "2020-04-14 07:00:00"
 
 def check_golden_file(
     input_file: str, actual_output_file: str, golden_file: str
-) -> bool:
-    def decorator(func: Callable[[List[dict]], None]):
+) -> Callable[[Callable[[List[Dict[Any, Any]]], None]], Any]:
+    def decorator(
+        func: Callable[[List[dict]], None]
+    ) -> Callable[[List[Dict[Any, Any]]], None]:
         @freeze_time(FROZEN_TIME)
         def wrapper(tmp_path, pytestconfig):
             source = ThriftSource.create(
@@ -45,7 +48,7 @@ def check_golden_file(
     "primitive_types.json",
     "primitive_types_golden.json",
 )
-def test_primitive(mcp_objects: List[dict]):
+def test_primitive(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     aspect = json.loads(obj["aspect"]["value"])
@@ -53,7 +56,7 @@ def test_primitive(mcp_objects: List[dict]):
     fields = aspect["fields"]
     tfs = thrift_schema["fields"]
     assert len(fields) == len(tfs) == 7
-    expected = [
+    expected = [  # type: ignore [var-annotated]
         (
             1,
             "boolValue",
@@ -104,12 +107,12 @@ def test_primitive(mcp_objects: List[dict]):
             [{"com.linkedin.schema.HyperTypeTextToken": {"text": "string"}}],
         ),
     ]
-    for field, tf, expected in zip(
+    for field, tf, exp in zip(
         fields,
         tfs,
         expected,
     ):
-        index, name, type_, native_type, hyper_type = expected
+        index, name, type_, native_type, hyper_type = exp
         assert field["fieldPath"] == tf["name"] == name
         assert field["type"] == type_
         assert field["nativeDataType"] == native_type
@@ -122,7 +125,7 @@ def test_primitive(mcp_objects: List[dict]):
     "namespace_star.json",
     "namespace_star_golden.json",
 )
-def test_namespace_star(mcp_objects: List[dict]):
+def test_namespace_star(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     assert (
@@ -136,7 +139,7 @@ def test_namespace_star(mcp_objects: List[dict]):
     "namespace_literal.json",
     "namespace_literal_golden.json",
 )
-def test_namespace_literal(mcp_objects: List[dict]):
+def test_namespace_literal(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     assert (
@@ -150,7 +153,7 @@ def test_namespace_literal(mcp_objects: List[dict]):
     "namespace_explicit.json",
     "namespace_explicit_golden.json",
 )
-def test_namespace_explicit(mcp_objects: List[dict]):
+def test_namespace_explicit(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     assert (
@@ -164,7 +167,7 @@ def test_namespace_explicit(mcp_objects: List[dict]):
     "namespace_py.json",
     "namespace_py_golden.json",
 )
-def test_namespace_py(mcp_objects: List[dict]):
+def test_namespace_py(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     assert obj["entityUrn"] == "urn:li:dataset:(urn:li:dataPlatform:thrift,Foo2,PROD)"
@@ -175,7 +178,7 @@ def test_namespace_py(mcp_objects: List[dict]):
     "namespace_multiple.json",
     "namespace_multiple_golden.json",
 )
-def test_namespace_multiple(mcp_objects: List[dict]):
+def test_namespace_multiple(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     assert (
@@ -189,7 +192,7 @@ def test_namespace_multiple(mcp_objects: List[dict]):
     "enum_types.json",
     "enum_types_golden.json",
 )
-def test_enum_types(mcp_objects: List[dict]):
+def test_enum_types(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 2
     key = mcp_objects[0]
     properties = mcp_objects[1]
@@ -214,7 +217,7 @@ def test_enum_types(mcp_objects: List[dict]):
     "union_types.json",
     "union_types_golden.json",
 )
-def test_union_types(mcp_objects: List[dict]):
+def test_union_types(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     obj[
@@ -227,7 +230,7 @@ def test_union_types(mcp_objects: List[dict]):
     "exception_types.json",
     "exception_types_golden.json",
 )
-def test_exception_types(mcp_objects: List[dict]):
+def test_exception_types(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     obj[
@@ -240,7 +243,7 @@ def test_exception_types(mcp_objects: List[dict]):
     "typedef.json",
     "typedef_golden.json",
 )
-def test_typedef(mcp_objects: List[dict]):
+def test_typedef(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     aspect = json.loads(obj["aspect"]["value"])
@@ -260,7 +263,7 @@ def test_typedef(mcp_objects: List[dict]):
     "nested_types.json",
     "nested_types_golden.json",
 )
-def test_nested_types(mcp_objects: List[dict]):
+def test_nested_types(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 5
     s1 = mcp_objects[0]
     aspect = json.loads(s1["aspect"]["value"])
@@ -316,7 +319,7 @@ def test_nested_types(mcp_objects: List[dict]):
     "include_1.json",
     "include_1_golden.json",
 )
-def test_include(mcp_objects: List[dict]):
+def test_include(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     aspect = json.loads(obj["aspect"]["value"])
@@ -332,7 +335,7 @@ def test_include(mcp_objects: List[dict]):
     "composite_types.json",
     "composite_types_golden.json",
 )
-def test_composite_types(mcp_objects: List[dict]):
+def test_composite_types(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     aspect = json.loads(obj["aspect"]["value"])
@@ -473,12 +476,12 @@ def test_composite_types(mcp_objects: List[dict]):
             ],
         ),
     ]
-    for field, tf, expected in zip(
+    for field, tf, exp in zip(
         fields,
         tfs,
         expected,
     ):
-        index, name, type_, native_type, hyper_type = expected
+        index, name, type_, native_type, hyper_type = exp
         assert field["fieldPath"] == tf["name"] == name
         assert field["type"] == type_
         assert field["nativeDataType"] == native_type
@@ -491,7 +494,7 @@ def test_composite_types(mcp_objects: List[dict]):
     "field_metadata.json",
     "field_metadata_golden.json",
 )
-def test_field_metadata(mcp_objects: List[dict]):
+def test_field_metadata(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 1
     obj = mcp_objects[0]
     aspect = json.loads(obj["aspect"]["value"])
@@ -499,7 +502,7 @@ def test_field_metadata(mcp_objects: List[dict]):
     fields = aspect["fields"]
     tfs = thrift_schema["fields"]
     assert len(fields) == len(tfs) == 4
-    expected = [
+    expected = [  # type: ignore [var-annotated]
         (
             1,
             "bar",
@@ -538,12 +541,12 @@ def test_field_metadata(mcp_objects: List[dict]):
         ),
     ]
 
-    for field, tf, expected in zip(
+    for field, tf, exp in zip(
         fields,
         tfs,
         expected,
     ):
-        index, name, type_, native_type, hyper_type, default, annotations = expected
+        index, name, type_, native_type, hyper_type, default, annotations = exp
         assert field["fieldPath"] == tf["name"] == name
         assert field["type"] == type_
         assert field["nativeDataType"] == native_type

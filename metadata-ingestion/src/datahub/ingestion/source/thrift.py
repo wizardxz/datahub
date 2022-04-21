@@ -1,21 +1,10 @@
-from abc import ABC
-from enum import Enum
-from functools import lru_cache, reduce
-from types import TracebackType
 import os
 import re
+from abc import ABC
 from dataclasses import dataclass, field, replace
-from typing import (
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from functools import lru_cache, reduce
+from types import TracebackType
+from typing import Dict, Generator, Iterable, List, Optional, Tuple, Type, Union, cast
 
 from antlr4 import CommonTokenStream, InputStream
 
@@ -151,7 +140,7 @@ class Unresolved(ResolveResult):
 @dataclass(frozen=True)
 class Redirect(Unresolved):
     filename: str
-    thrift_path: Optional[List[str]]
+    thrift_path: Optional[Tuple[str, ...]]
     qualified_name: str
 
 
@@ -247,7 +236,7 @@ class NameResolver:
     def add_include(self, qualifier: str, filename: str) -> "NameResolver":
         return replace(self, includes={**self.includes, qualifier: filename})
 
-    def add_namespace(self, language, namespace) -> "NameResolver":
+    def add_namespace(self, language: str, namespace: str) -> "NameResolver":
         return replace(self, namespaces={**self.namespaces, language: namespace})
 
     def get(self, name: str) -> Optional[ResolveResult]:
@@ -407,7 +396,7 @@ class BindingContext(ABC):
         return None
 
     def resolve(self, qualified_name: str) -> Optional[ResolveResult]:
-        current = self
+        current: Optional[BindingContext] = self
         while current is not None:
             result = current._resolve(qualified_name)
             if result is not None:
@@ -415,18 +404,19 @@ class BindingContext(ABC):
             current = current.parent
         # TODO
         # raise RuntimeError(f"{qualified_name} cannot be resolved.")
+        return None
 
     def _get_filename(self) -> Optional[str]:
         return None
 
-    def get_filename(self) -> Optional[str]:
-        current = self
+    def get_filename(self) -> str:
+        current: Optional[BindingContext] = self
         while current is not None:
             result = current._get_filename()
             if result is not None:
                 return result
             current = current.parent
-        return None
+        raise RuntimeError("Cannot get filename")
 
 
 @dataclass
@@ -445,6 +435,7 @@ class BindingContextPusher:
         exc: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> bool:
+        assert self.old_context is not None
         self.binder.context = self.old_context
         return True
 
@@ -464,7 +455,7 @@ class NamingBindingContext(BindingContext):
                 filename = name_resolver.includes[qualifier]
                 return Redirect(filename, self.thrift_paths, name)
             elif isinstance(name_resolver.get(qualifier), ResolvedEnum):
-                return None # TODO 1: order = SortOrder.DESC 
+                return None  # TODO 1: order = SortOrder.DESC
             else:
                 raise RuntimeError(
                     f"The qualifier of {qualified_name} is not included."
@@ -740,12 +731,12 @@ class Binder:
         if func is None:
             raise NotImplementedError()
 
-        return func(result)
+        return func(result)  # type: ignore [operator, Cannot call function of unknown type]
 
     def bind_native_data_type_from_Resolved(self, result: Resolved) -> str:
         return result.native_data_type
 
-    def bind_native_data_type_from_Redirect(self, result: Redirect) -> str:
+    def bind_native_data_type_from_Redirect(self, result: Redirect) -> str:  # type: ignore [return, Missing return statement]
         with BindingContextPusher(
             self,
             NamingBindingContext(
@@ -818,17 +809,17 @@ class Binder:
 
         func = {
             ResolvedEnum: lambda _: int,
-            ResolvedUnion: lambda _: None, # TODO 29: Container container = { "mesos": {} }
-            ResolvedStruct: lambda _: None, # TODO 4: optional AdditionalParams additionalParams = {};
+            ResolvedUnion: lambda _: None,  # TODO 29: Container container = { "mesos": {} }
+            ResolvedStruct: lambda _: None,  # TODO 4: optional AdditionalParams additionalParams = {};
             Redirect: self.bind_Type_from_Redirect,
             UnresolvedFieldType: self.bind_Type_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
             raise NotImplementedError()
 
-        return func(result)
+        return func(result)  # type: ignore [operator, Cannot call function of unknown type]
 
-    def bind_Type_from_Redirect(self, result: Redirect) -> Type:
+    def bind_Type_from_Redirect(self, result: Redirect) -> Type:  # type: ignore [return, Missing return statement]
         with BindingContextPusher(
             self,
             NamingBindingContext(
@@ -837,7 +828,9 @@ class Binder:
         ):
             return self.bind_Type_from_qualified_name(result.qualified_name)
 
-    def bind_Type_from_UnresolvedFieldType(self, result: UnresolvedFieldType) -> Type:
+    def bind_Type_from_UnresolvedFieldType(
+        self, result: UnresolvedFieldType
+    ) -> Optional[Type]:
         return self.bind_Type_from_field_type(result.ctx)
 
     def bind_Type_from_container_type(
@@ -872,9 +865,7 @@ class Binder:
         else:
             raise NotImplementedError()
 
-    def bind_value_from_DOUBLE(
-        self, ctx: ThriftParser.IDENTIFIER
-    ) -> float:
+    def bind_value_from_DOUBLE(self, ctx: ThriftParser.IDENTIFIER) -> float:
         return float(ctx.getText())
 
     def bind_value_from_LITERAL(self, ctx: ThriftParser.LITERAL) -> str:
@@ -892,20 +883,20 @@ class Binder:
         result = self.context.resolve(qualified_name)
 
         func = {
-            ResolvedConstValue: lambda x, _: x.value,
-            Redirect: self.bind_value_from_Redirect,
+            ResolvedConstValue: lambda x, _: cast(ResolvedConstValue, x).value,
+            Redirect: self.bind_value_from_Redirect,  # type: ignore [dict-item]
             UnresolvedConstValue: self.bind_value_from_UnresolvedConstValue,
         }.get(type(result), None)
-        if func is not None:
-            return func(result, type_)
+        if func is not None and result is not None:
+            return func(result, type_)  # type: ignore [arg-type]
         else:
             # TODO failed to resolve
             return None
 
-
-    def bind_value_from_Redirect(
+    def bind_value_from_Redirect(  # type: ignore [return, Missing return statement]
         self, result: Redirect, type_: Type
     ) -> Union[int, str, bool, float, None]:
+        assert isinstance(result, Redirect)
         with BindingContextPusher(
             self,
             NamingBindingContext(
@@ -943,7 +934,7 @@ class Binder:
         if ctx.const_value():
             type_ = self.bind_Type_from_field_type(ctx.field_type())
             # TODO type_ could be union, not implemented yet.
-            if type_ is not None: 
+            if type_ is not None:
                 default = self.bind_value_from_const_value(ctx.const_value(), type_)
             else:
                 default = None
@@ -1000,7 +991,7 @@ class Binder:
         if func is None:
             raise NotImplementedError()
 
-        yield from func(result)
+        yield from func(result)  # type: ignore [operator, Cannot call function of unknown type]
 
     def bind_HyperType_from_Redirect(
         self, result: Redirect
@@ -1083,26 +1074,27 @@ class Binder:
         self, qualified_name: str
     ) -> SchemaFieldDataType:
         result = self.context.resolve(qualified_name)
+        assert result is not None
 
         func = {
             ResolvedEnum: lambda _: SchemaFieldDataType(EnumType()),
             ResolvedStruct: lambda _: SchemaFieldDataType(RecordType()),
-            ResolvedUnion: self.bind_SchemaFieldDataType_from_ResolvedUnion,
+            ResolvedUnion: self.bind_SchemaFieldDataType_from_ResolvedUnion,  # type: ignore [dict-item]
             ResolvedException: lambda _: SchemaFieldDataType(RecordType()),
-            Redirect: self.bind_SchemaFieldDataType_from_Redirect,
+            Redirect: self.bind_SchemaFieldDataType_from_Redirect,  # type: ignore [dict-item]
             UnresolvedFieldType: self.bind_SchemaFieldDataType_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
             raise NotImplementedError()
 
-        return func(result)
+        return func(result)  # type: ignore [arg-type]
 
     def bind_SchemaFieldDataType_from_ResolvedUnion(
         self, result: ResolvedUnion
     ) -> SchemaFieldDataType:
         return SchemaFieldDataType(UnionType(result.subtypes))
 
-    def bind_SchemaFieldDataType_from_Redirect(
+    def bind_SchemaFieldDataType_from_Redirect(  # type: ignore [return, Missing return statement]
         self, result: Redirect
     ) -> SchemaFieldDataType:
         with BindingContextPusher(

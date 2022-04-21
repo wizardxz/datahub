@@ -212,5 +212,8 @@ entities:
   - name: thriftEnumType
     keyAspect: thriftEnumTypeKey
     aspects:
+  - name: thriftEnumType
+    keyAspect: thriftEnumTypeKey
+    aspects:
       - thriftEnumTypeProperties
 events:
