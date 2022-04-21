@@ -2,6 +2,8 @@ package com.linkedin.datahub.graphql.resolvers.type;
 
 import com.linkedin.datahub.graphql.generated.KeyValueSchema;
 import com.linkedin.datahub.graphql.generated.TableSchema;
+import com.linkedin.datahub.graphql.generated.ThriftSchema;
+
 import graphql.TypeResolutionEnvironment;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.TypeResolver;
@@ -10,6 +12,7 @@ public class PlatformSchemaUnionTypeResolver implements TypeResolver {
 
     private static final String TABLE_SCHEMA_TYPE_NAME = "TableSchema";
     private static final String KEY_VALUE_SCHEMA_TYPE_NAME = "KeyValueSchema";
+    private static final String THRIFT_SCHEMA_TYPE_NAME = "ThriftSchema";
 
     @Override
     public GraphQLObjectType getType(TypeResolutionEnvironment env) {
@@ -17,6 +20,8 @@ public class PlatformSchemaUnionTypeResolver implements TypeResolver {
             return env.getSchema().getObjectType(TABLE_SCHEMA_TYPE_NAME);
         } else if (env.getObject() instanceof KeyValueSchema) {
             return env.getSchema().getObjectType(KEY_VALUE_SCHEMA_TYPE_NAME);
+        } else if (env.getObject() instanceof ThriftSchema) {
+            return env.getSchema().getObjectType(THRIFT_SCHEMA_TYPE_NAME);
         } else {
             throw new RuntimeException("Unrecognized object type provided to type resolver");
         }

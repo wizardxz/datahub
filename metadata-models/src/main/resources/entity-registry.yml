@@ -209,4 +209,8 @@ entities:
       - glossaryTerms
       - editableMlPrimaryKeyProperties
       - domains
+  - name: thriftEnum
+    keyAspect: thriftEnumKey
+    aspects:
+      - thriftEnumProperties
 events:

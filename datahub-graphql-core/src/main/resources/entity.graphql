@@ -138,6 +138,11 @@ type Query {
     List all DataHub Domains
     """
     listDomains(input: ListDomainsInput!): ListDomainsResult
+
+    """
+    Fetch a ThriftEnum by primary key
+    """
+    thriftEnum(urn: String!): ThriftEnum
 }
 
 """
@@ -451,6 +456,11 @@ enum EntityType {
     An instance of an individual run of a data job or data flow
     """
     DATA_PROCESS_INSTANCE
+
+    """
+    The generic ThriftEnum
+    """
+    THRIFT_ENUM
 }
 
 """
@@ -1738,7 +1748,7 @@ type Schema {
 """
 A type of Schema, either a table schema or a key value schema
 """
-union PlatformSchema = TableSchema | KeyValueSchema
+union PlatformSchema = TableSchema | KeyValueSchema | ThriftSchema
 
 """
 Information about a raw Table Schema
@@ -1763,6 +1773,54 @@ type KeyValueSchema {
     Raw value schema
     """
     valueSchema: String!
+}
+
+"""
+Information about a thrift Schema
+"""
+type ThriftSchema {
+    """
+    Raw table schema
+    """
+    rawSchema: String!
+    filename: String!
+    fields: [ThriftField!]!
+    annotations: [ThriftAnnotation!]
+    namespaces: [ThriftNamespace!]
+}
+
+"""
+Thrift field information
+"""
+type ThriftField {
+    name: String!
+    index: Int!
+    hyperType: [HyperTypeToken!]!
+    default: ThriftDefaultValue
+    annotations: [ThriftAnnotation!]
+}
+
+"""
+The hyperType information in ThriftField
+"""
+union HyperTypeToken = HyperTypeTextToken | HyperTypeUrnToken
+
+type HyperTypeTextToken {
+    text: String!
+}
+
+type HyperTypeUrnToken {
+    text: String!
+    urn: String!
+}
+"""
+The default value in ThriftField
+"""
+type ThriftDefaultValue {
+    intValue: Int
+    stringValue: String
+    floatValue: Float
+    booleanValue: Boolean
 }
 
 """
@@ -7396,4 +7454,95 @@ type Health {
   The causes responsible for the health status
   """
   causes: [String!]
+}
+
+"""
+The generic ThriftEnum Entity
+"""
+type ThriftEnum implements Entity {
+
+    """
+    The primary key of the ThriftEnum
+    """
+    urn: String!
+
+    """
+    A standard Entity Type
+    """
+    type: EntityType!
+
+    """
+    The name for the ThriftEnum
+    """
+    name: String!
+
+    """
+    The namespaces for the ThriftEnum
+    """
+    namespaces: [ThriftNamespace!]
+    
+    """
+    The list of items from ThriftEnum.
+    """
+    items: [ThriftEnumItem!]
+
+    """
+    The list of annotations from ThriftEnum.
+    """
+    annotations: [ThriftAnnotation!]
+
+    """
+    Granular API for querying edges extending from this entity
+    """
+    relationships(input: RelationshipsInput!): EntityRelationshipsResult
+}
+
+type ThriftNamespace {
+    """
+    The language of thrift namespace
+    """
+    language: String!
+
+    """
+    The namespace of the language
+    """
+    value: String!
+}
+type ThriftEnumItem {
+    """
+    The key of the EnumItem
+    """
+    key: String!
+
+    """
+    The value of the EnumItem
+    """
+    value: ThriftEnumItemValue
+
+    """
+    The list of annotations from ThriftEnumItem
+    """
+    annotations: [ThriftAnnotation!]
+}
+
+type ThriftEnumItemValue {
+    intValue: Int
+    stringValue: String
+}
+
+type ThriftAnnotation {
+    """
+    The key of the ThriftAnnotation
+    """
+    key: String!
+
+    """
+    The value of the ThriftAnnotation
+    """
+    value: ThriftAnnotationValue!
+}
+
+type ThriftAnnotationValue {
+    intValue: Int
+    stringValue: String
 }

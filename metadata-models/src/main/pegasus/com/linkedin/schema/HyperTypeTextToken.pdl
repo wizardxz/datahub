@@ -1,0 +1,12 @@
+namespace com.linkedin.schema
+
+/**
+ * Text Token in HyperType in ThriftSchema
+ */
+record HyperTypeTextToken {
+
+  /**
+   * The Text Token in HyperType in ThriftSchema.
+   */
+  text: string
+}

@@ -1,0 +1,13 @@
+namespace com.linkedin.schema
+
+/**
+ * Urn Token in HyperType in ThriftSchema
+ */
+record HyperTypeUrnToken {
+
+  /**
+   * The Urn Token in HyperType in ThriftSchema.
+   */
+  text: string
+  urn: string
+}

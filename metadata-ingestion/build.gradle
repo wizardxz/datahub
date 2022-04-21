@@ -72,16 +72,16 @@ task lint(type: Exec, dependsOn: installDev) {
    */
   commandLine 'bash', '-x', '-c',
     "find ${venv_name}/lib -path *airflow/_vendor/connexion/spec.py -exec sed -i.bak -e '169,169s/  # type: List\\[str\\]//g' {} \\; && " +
-    "source ${venv_name}/bin/activate && black --check --diff src/ tests/ examples/ && isort --check --diff src/ tests/ examples/ && flake8 --count --statistics src/ tests/ examples/ && mypy src/ tests/ examples/"
+    "source ${venv_name}/bin/activate && black --check --diff src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && isort --check --diff src/ tests/ examples/ -s src/datahub/ingestion/source/dist/ && flake8 --count --statistics src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
 }
 
 task lintFix(type: Exec, dependsOn: installDev) {
   commandLine 'bash', '-x', '-c',
     "source ${venv_name}/bin/activate && " +
-    "black src/ tests/ examples/ && " +
-    "isort src/ tests/ examples/ && " +
-    "flake8 src/ tests/ examples/ && " +
-    "mypy src/ tests/ examples/"
+    "black src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && " +
+    "isort src/ tests/ examples/ -s src/datahub/ingestion/source/dist/ && " +
+    "flake8 src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && " +
+    "mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
 }
 
 task generateThriftParseTools(type: JavaExec) {
@@ -141,6 +141,7 @@ task cleanPythonCache(type: Exec) {
 }
 
 build.dependsOn install
+build.dependsOn generateThriftParseTools
 check.dependsOn lint
 check.dependsOn testQuick
 
@@ -148,6 +149,7 @@ clean {
   delete venv_name
   delete 'build'
   delete 'dist'
+  delete 'src/datahub/ingestion/source/dist'
   delete 'src/datahub/metadata'
   delete '../docs/generated'
 }

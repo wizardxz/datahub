@@ -1,0 +1,15 @@
+[
+  {
+    "auditHeader": null,
+    "entityType": "dataset",
+    "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.Foo7,PROD)",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "schemaMetadata",
+    "aspect": {
+      "value": "{\"schemaName\": \"Foo7\", \"platform\": \"urn:li:dataPlatform:thrift\", \"version\": 0, \"created\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"lastModified\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"hash\": \"\", \"platformSchema\": {\"com.linkedin.schema.ThriftSchema\": {\"rawSchema\": \"structFoo7{1:IDbar}\", \"filename\": \"./tests/unit/thrift_files/typedef.thrift\", \"fields\": [{\"name\": \"bar\", \"index\": 1, \"hyperType\": [{\"com.linkedin.schema.HyperTypeTextToken\": {\"text\": \"i64\"}}]}], \"namespace_\": {\"java\": \"com.company\"}}}, \"fields\": [{\"fieldPath\": \"bar\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"i64\", \"recursive\": false, \"isPartOfKey\": false}]}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  }
+]

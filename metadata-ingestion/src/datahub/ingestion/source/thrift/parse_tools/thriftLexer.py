@@ -1,9 +1,9 @@
 # Generated from thrift.g4 by ANTLR 4.7.2
-import sys
+from antlr4 import *
 from io import StringIO
 from typing.io import TextIO
+import sys
 
-from antlr4 import *
 
 
 def serializedATN():
@@ -14,8 +14,8 @@ def serializedATN():
         buf.write("\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23")
         buf.write("\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30")
         buf.write("\4\31\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36")
-        buf.write('\t\36\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4$\t$\4%\t%')
-        buf.write("\4&\t&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.")
+        buf.write("\t\36\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4$\t$\4%\t%")
+        buf.write("\4&\t&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.")
         buf.write("\t.\4/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63\t\63\4\64")
         buf.write("\t\64\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\49\t9\3\2\3")
         buf.write("\2\3\2\3\2\3\2\3\2\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3\3\3\3")
@@ -34,10 +34,10 @@ def serializedATN():
         buf.write("\3\31\3\31\3\31\3\32\3\32\3\32\3\32\3\32\3\32\3\33\3\33")
         buf.write("\3\33\3\33\3\33\3\34\3\34\3\34\3\34\3\34\3\34\3\34\3\35")
         buf.write("\3\35\3\35\3\35\3\36\3\36\3\37\3\37\3 \3 \3 \3 \3!\3!")
-        buf.write('\3!\3!\3!\3"\3"\3"\3"\3"\3"\3"\3"\3"\3#\3#\3')
+        buf.write("\3!\3!\3!\3\"\3\"\3\"\3\"\3\"\3\"\3\"\3\"\3\"\3#\3#\3")
         buf.write("$\3$\3%\3%\3&\5&\u0148\n&\3&\6&\u014b\n&\r&\16&\u014c")
-        buf.write("\3'\5'\u0150\n'\3'\3'\3'\3'\6'\u0156\n'\r'\16")
-        buf.write("'\u0157\3(\5(\u015b\n(\3(\6(\u015e\n(\r(\16(\u015f\3")
+        buf.write("\3\'\5\'\u0150\n\'\3\'\3\'\3\'\3\'\6\'\u0156\n\'\r\'\16")
+        buf.write("\'\u0157\3(\5(\u015b\n(\3(\6(\u015e\n(\r(\16(\u015f\3")
         buf.write("(\3(\6(\u0164\n(\r(\16(\u0165\5(\u0168\n(\3(\3(\6(\u016c")
         buf.write("\n(\r(\16(\u016d\5(\u0170\n(\3(\3(\5(\u0174\n(\3)\3)\3")
         buf.write(")\3)\3)\3*\3*\3*\3*\3*\3+\3+\3+\3+\3,\3,\3,\3,\3-\3-\3")
@@ -52,16 +52,16 @@ def serializedATN():
         buf.write("\n8\f8\168\u01dc\138\38\58\u01df\n8\38\38\38\38\39\39")
         buf.write("\39\39\79\u01e9\n9\f9\169\u01ec\139\39\39\39\39\39\3\u01ea")
         buf.write("\2:\3\3\5\4\7\5\t\6\13\7\r\b\17\t\21\n\23\13\25\f\27\r")
-        buf.write("\31\16\33\17\35\20\37\21!\22#\23%\24'\25)\26+\27-\30")
-        buf.write("/\31\61\32\63\33\65\34\67\359\36;\37= ?!A\"C#E$G%I&K'")
+        buf.write("\31\16\33\17\35\20\37\21!\22#\23%\24\'\25)\26+\27-\30")
+        buf.write("/\31\61\32\63\33\65\34\67\359\36;\37= ?!A\"C#E$G%I&K\'")
         buf.write("M(O)Q*S+U,W-Y.[/]\60_\61a\62c\63e\64g\2i\2k\2m\65o\66")
         buf.write("q\67\3\2\13\4\2--//\4\2GGgg\3\2$$\3\2))\4\2\60\60aa\4")
-        buf.write('\2C\\c|\4\2CHch\4\2\13\13""\3\2\f\f\2\u0208\2\3\3\2')
+        buf.write("\2C\\c|\4\2CHch\4\2\13\13\"\"\3\2\f\f\2\u0208\2\3\3\2")
         buf.write("\2\2\2\5\3\2\2\2\2\7\3\2\2\2\2\t\3\2\2\2\2\13\3\2\2\2")
         buf.write("\2\r\3\2\2\2\2\17\3\2\2\2\2\21\3\2\2\2\2\23\3\2\2\2\2")
         buf.write("\25\3\2\2\2\2\27\3\2\2\2\2\31\3\2\2\2\2\33\3\2\2\2\2\35")
         buf.write("\3\2\2\2\2\37\3\2\2\2\2!\3\2\2\2\2#\3\2\2\2\2%\3\2\2\2")
-        buf.write("\2'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2\2\2/\3\2\2")
+        buf.write("\2\'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2\2\2/\3\2\2")
         buf.write("\2\2\61\3\2\2\2\2\63\3\2\2\2\2\65\3\2\2\2\2\67\3\2\2\2")
         buf.write("\29\3\2\2\2\2;\3\2\2\2\2=\3\2\2\2\2?\3\2\2\2\2A\3\2\2")
         buf.write("\2\2C\3\2\2\2\2E\3\2\2\2\2G\3\2\2\2\2I\3\2\2\2\2K\3\2")
@@ -73,7 +73,7 @@ def serializedATN():
         buf.write("\17\u00af\3\2\2\2\21\u00b5\3\2\2\2\23\u00b7\3\2\2\2\25")
         buf.write("\u00bf\3\2\2\2\27\u00c4\3\2\2\2\31\u00c6\3\2\2\2\33\u00c8")
         buf.write("\3\2\2\2\35\u00ce\3\2\2\2\37\u00d5\3\2\2\2!\u00db\3\2")
-        buf.write("\2\2#\u00e5\3\2\2\2%\u00ed\3\2\2\2'\u00f5\3\2\2\2)\u00f7")
+        buf.write("\2\2#\u00e5\3\2\2\2%\u00ed\3\2\2\2\'\u00f5\3\2\2\2)\u00f7")
         buf.write("\3\2\2\2+\u0100\3\2\2\2-\u0109\3\2\2\2/\u010b\3\2\2\2")
         buf.write("\61\u010d\3\2\2\2\63\u0114\3\2\2\2\65\u011a\3\2\2\2\67")
         buf.write("\u011f\3\2\2\29\u0126\3\2\2\2;\u012a\3\2\2\2=\u012c\3")
@@ -119,7 +119,7 @@ def serializedATN():
         buf.write("\7q\2\2\u00d9\u00da\7p\2\2\u00da \3\2\2\2\u00db\u00dc")
         buf.write("\7g\2\2\u00dc\u00dd\7z\2\2\u00dd\u00de\7e\2\2\u00de\u00df")
         buf.write("\7g\2\2\u00df\u00e0\7r\2\2\u00e0\u00e1\7v\2\2\u00e1\u00e2")
-        buf.write('\7k\2\2\u00e2\u00e3\7q\2\2\u00e3\u00e4\7p\2\2\u00e4"')
+        buf.write("\7k\2\2\u00e2\u00e3\7q\2\2\u00e3\u00e4\7p\2\2\u00e4\"")
         buf.write("\3\2\2\2\u00e5\u00e6\7u\2\2\u00e6\u00e7\7g\2\2\u00e7\u00e8")
         buf.write("\7t\2\2\u00e8\u00e9\7x\2\2\u00e9\u00ea\7k\2\2\u00ea\u00eb")
         buf.write("\7e\2\2\u00eb\u00ec\7g\2\2\u00ec$\3\2\2\2\u00ed\u00ee")
@@ -233,7 +233,7 @@ class thriftLexer(Lexer):
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
+    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
 
     T__0 = 1
     T__1 = 2
@@ -289,146 +289,44 @@ class thriftLexer(Lexer):
     SL_COMMENT = 52
     ML_COMMENT = 53
 
-    channelNames = ["DEFAULT_TOKEN_CHANNEL", "HIDDEN"]
+    channelNames = [ u"DEFAULT_TOKEN_CHANNEL", u"HIDDEN" ]
 
-    modeNames = ["DEFAULT_MODE"]
+    modeNames = [ "DEFAULT_MODE" ]
 
-    literalNames = [
-        "<INVALID>",
-        "'include'",
-        "'namespace'",
-        "'*'",
-        "'cpp_namespace'",
-        "'php_namespace'",
-        "'cpp_include'",
-        "'const'",
-        "'='",
-        "'typedef'",
-        "'enum'",
-        "'{'",
-        "'}'",
-        "'senum'",
-        "'struct'",
-        "'union'",
-        "'exception'",
-        "'service'",
-        "'extends'",
-        "':'",
-        "'required'",
-        "'optional'",
-        "'('",
-        "')'",
-        "'oneway'",
-        "'async'",
-        "'void'",
-        "'throws'",
-        "'map'",
-        "'<'",
-        "'>'",
-        "'set'",
-        "'list'",
-        "'cpp_type'",
-        "'['",
-        "']'",
-        "';'",
-        "'bool'",
-        "'byte'",
-        "'i16'",
-        "'i32'",
-        "'i64'",
-        "'double'",
-        "'string'",
-        "'binary'",
-        "','",
-    ]
+    literalNames = [ "<INVALID>",
+            "'include'", "'namespace'", "'*'", "'cpp_namespace'", "'php_namespace'", 
+            "'cpp_include'", "'const'", "'='", "'typedef'", "'enum'", "'{'", 
+            "'}'", "'senum'", "'struct'", "'union'", "'exception'", "'service'", 
+            "'extends'", "':'", "'required'", "'optional'", "'('", "')'", 
+            "'oneway'", "'async'", "'void'", "'throws'", "'map'", "'<'", 
+            "'>'", "'set'", "'list'", "'cpp_type'", "'['", "']'", "';'", 
+            "'bool'", "'byte'", "'i16'", "'i32'", "'i64'", "'double'", "'string'", 
+            "'binary'", "','" ]
 
-    symbolicNames = [
-        "<INVALID>",
-        "INTEGER",
-        "HEX_INTEGER",
-        "DOUBLE",
-        "TYPE_BOOL",
-        "TYPE_BYTE",
-        "TYPE_I16",
-        "TYPE_I32",
-        "TYPE_I64",
-        "TYPE_DOUBLE",
-        "TYPE_STRING",
-        "TYPE_BINARY",
-        "LITERAL",
-        "IDENTIFIER",
-        "COMMA",
-        "WS",
-        "SL_COMMENT",
-        "ML_COMMENT",
-    ]
+    symbolicNames = [ "<INVALID>",
+            "INTEGER", "HEX_INTEGER", "DOUBLE", "TYPE_BOOL", "TYPE_BYTE", 
+            "TYPE_I16", "TYPE_I32", "TYPE_I64", "TYPE_DOUBLE", "TYPE_STRING", 
+            "TYPE_BINARY", "LITERAL", "IDENTIFIER", "COMMA", "WS", "SL_COMMENT", 
+            "ML_COMMENT" ]
 
-    ruleNames = [
-        "T__0",
-        "T__1",
-        "T__2",
-        "T__3",
-        "T__4",
-        "T__5",
-        "T__6",
-        "T__7",
-        "T__8",
-        "T__9",
-        "T__10",
-        "T__11",
-        "T__12",
-        "T__13",
-        "T__14",
-        "T__15",
-        "T__16",
-        "T__17",
-        "T__18",
-        "T__19",
-        "T__20",
-        "T__21",
-        "T__22",
-        "T__23",
-        "T__24",
-        "T__25",
-        "T__26",
-        "T__27",
-        "T__28",
-        "T__29",
-        "T__30",
-        "T__31",
-        "T__32",
-        "T__33",
-        "T__34",
-        "T__35",
-        "INTEGER",
-        "HEX_INTEGER",
-        "DOUBLE",
-        "TYPE_BOOL",
-        "TYPE_BYTE",
-        "TYPE_I16",
-        "TYPE_I32",
-        "TYPE_I64",
-        "TYPE_DOUBLE",
-        "TYPE_STRING",
-        "TYPE_BINARY",
-        "LITERAL",
-        "IDENTIFIER",
-        "COMMA",
-        "LETTER",
-        "DIGIT",
-        "HEX_DIGIT",
-        "WS",
-        "SL_COMMENT",
-        "ML_COMMENT",
-    ]
+    ruleNames = [ "T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", 
+                  "T__7", "T__8", "T__9", "T__10", "T__11", "T__12", "T__13", 
+                  "T__14", "T__15", "T__16", "T__17", "T__18", "T__19", 
+                  "T__20", "T__21", "T__22", "T__23", "T__24", "T__25", 
+                  "T__26", "T__27", "T__28", "T__29", "T__30", "T__31", 
+                  "T__32", "T__33", "T__34", "T__35", "INTEGER", "HEX_INTEGER", 
+                  "DOUBLE", "TYPE_BOOL", "TYPE_BYTE", "TYPE_I16", "TYPE_I32", 
+                  "TYPE_I64", "TYPE_DOUBLE", "TYPE_STRING", "TYPE_BINARY", 
+                  "LITERAL", "IDENTIFIER", "COMMA", "LETTER", "DIGIT", "HEX_DIGIT", 
+                  "WS", "SL_COMMENT", "ML_COMMENT" ]
 
     grammarFileName = "thrift.g4"
 
-    def __init__(self, input=None, output: TextIO = sys.stdout):
+    def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.7.2")
-        self._interp = LexerATNSimulator(
-            self, self.atn, self.decisionsToDFA, PredictionContextCache()
-        )
+        self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
         self._actions = None
         self._predicates = None
+
+

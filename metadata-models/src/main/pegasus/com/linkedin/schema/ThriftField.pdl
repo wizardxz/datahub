@@ -1,0 +1,16 @@
+namespace com.linkedin.schema
+
+/**
+ * Schema holder for Thrift schema types.
+ */
+record ThriftField {
+
+  /**
+   * The native schema in the dataset's platform.
+   */
+  name: string
+  index: int
+  hyperType: array[union[HyperTypeTextToken, HyperTypeUrnToken]]
+  default: optional union[int, string, float, boolean]
+  annotations: optional array[ThriftAnnotation]
+}

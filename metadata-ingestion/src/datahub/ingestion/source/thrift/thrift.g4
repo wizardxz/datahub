@@ -1,9 +1,5 @@
 grammar thrift;
-/*
-This file displays the grammar of thrift file and the structure of the tree parsed by Antlr
-The documentation of Antlr is here: https://www.antlr.org/
- */
- 
+
 document
     : header* definition* EOF
     ;
@@ -17,10 +13,10 @@ include_
     ;
 
 namespace_
-    : 'namespace' '*' (IDENTIFIER | LITERAL)
-    | 'namespace' IDENTIFIER (IDENTIFIER | LITERAL)
-    | 'cpp_namespace' IDENTIFIER
-    | 'php_namespace' IDENTIFIER
+    : 'namespace' '*' (IDENTIFIER | LITERAL)         # starNamespace
+    | 'namespace' IDENTIFIER (IDENTIFIER | LITERAL)  # explicitNamespace
+    | 'cpp_namespace' IDENTIFIER                     # cppNamespace
+    | 'php_namespace' IDENTIFIER                     # phpNamespace
     ;
 
 cpp_include
@@ -29,7 +25,7 @@ cpp_include
 
 
 definition
-    : const_rule | typedef_ | enum_rule | senum | struct_ | union_ | exception | service
+    : const_rule | typedef_ | enum_rule | senum | struct_ | union_ | exception_ | service
     ;
 
 const_rule
@@ -60,7 +56,7 @@ union_
     : 'union' IDENTIFIER '{' field* '}' type_annotations?
     ;
 
-exception
+exception_
     : 'exception' IDENTIFIER '{' field* '}' type_annotations?
     ;
 
