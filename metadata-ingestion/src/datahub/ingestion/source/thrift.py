@@ -1,6 +1,7 @@
-import json
 from dataclasses import dataclass, field
-from typing import Generator, Iterable, Iterator, Union
+from typing import Generator, Iterable, Union
+
+from antlr4 import InputStream, CommonTokenStream
 
 from datahub.configuration.common import ConfigModel
 from datahub.ingestion.api.source import Source, SourceReport
@@ -8,11 +9,8 @@ from datahub.ingestion.api.workunit import MetadataWorkUnit, UsageStatsWorkUnit
 from datahub.metadata.com.linkedin.pegasus2avro.metadata.snapshot import DatasetSnapshot
 from datahub.metadata.com.linkedin.pegasus2avro.mxe import (
     MetadataChangeEvent,
-    MetadataChangeProposal,
 )
 from datahub.metadata.com.linkedin.pegasus2avro.schema import (
-    ArrayType,
-    NullType,
     NumberType,
     OtherSchema,
     SchemaField,
@@ -20,14 +18,10 @@ from datahub.metadata.com.linkedin.pegasus2avro.schema import (
     SchemaMetadata,
     StringType,
 )
-from datahub.metadata.schema_classes import DatasetSnapshotClass, UsageAggregationClass
 
-
-from antlr4 import *
-from .dist.ThriftGrammerLexer import ThriftGrammerLexer
-from .dist.ThriftGrammerParser import ThriftGrammerParser
-from .dist.ThriftGrammerVisitor import ThriftGrammerVisitor
-from typing import Union, overload, List
+from datahub.ingestion.source.dist.ThriftGrammerLexer import ThriftGrammerLexer
+from datahub.ingestion.source.dist.ThriftGrammerParser import ThriftGrammerParser
+from datahub.ingestion.source.dist.ThriftGrammerVisitor import ThriftGrammerVisitor
 
 
 class ThriftSourceConfig(ConfigModel):
@@ -70,11 +64,8 @@ class ThriftVisitor(ThriftGrammerVisitor):
             )
         )
 
-    
-
     def visitField(self, ctx: ThriftGrammerParser.FieldContext) -> SchemaField:
         return SchemaField(
-
             fieldPath=ctx.IDENTIFIER().getText(),
             type=self.visit(ctx.field_type()),
             nativeDataType=ctx.field_type().getText(),
@@ -102,9 +93,6 @@ class ThriftVisitor(ThriftGrammerVisitor):
             raise NotImplementedError()
 
 
-
-
-
 @dataclass
 class ThriftSource(Source):
     config: ThriftSourceConfig
@@ -118,7 +106,7 @@ class ThriftSource(Source):
     def parse(self, filename) -> Generator[MetadataChangeEvent, None, None]:
         with open(filename) as text_file:
             # lexer
-            
+
             lexer = ThriftGrammerLexer(InputStream(text_file.read()))
             stream = CommonTokenStream(lexer)
             # parser

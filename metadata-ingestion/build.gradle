@@ -68,6 +68,7 @@ task lint(type: Exec, dependsOn: installDev) {
     "find ${venv_name}/lib -path *airflow/_vendor/connexion/spec.py -exec sed -i.bak -e '169,169s/  # type: List\\[str\\]//g' {} \\; && " +
     "source ${venv_name}/bin/activate && black --check --diff src/ tests/ examples/ && isort --check --diff src/ tests/ examples/ && flake8 --count --statistics src/ tests/ examples/ && mypy src/ tests/ examples/"
 }
+
 task lintFix(type: Exec, dependsOn: installDev) {
   commandLine 'bash', '-x', '-c',
     "source ${venv_name}/bin/activate && " +
@@ -75,6 +76,12 @@ task lintFix(type: Exec, dependsOn: installDev) {
     "isort src/ tests/ examples/ && " +
     "flake8 src/ tests/ examples/ && " +
     "mypy src/ tests/ examples/"
+}
+
+task generate_dist(type:Exec, dependsOn: installDev) {
+  commandLine 'bash', '-x', '-c',
+    "antlr4 -Dlanguage=Python3 src/datahub/ingestion/source/ThriftGrammer.g4 -visitor -o src/datahub/ingestion/source/dist"
+
 }
 
 task testQuick(type: Exec, dependsOn: installDev) {
