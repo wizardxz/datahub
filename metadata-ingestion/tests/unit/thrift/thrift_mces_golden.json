@@ -37,7 +37,7 @@
                   "description": null,
                   "type": {
                     "type": {
-                      "com.linkedin.pegasus2avro.schema.StringType": {}
+                      "com.linkedin.pegasus2avro.schema.NumberType": {}
                     }
                   },
                   "nativeDataType": "i64",
@@ -71,7 +71,7 @@
                   "description": null,
                   "type": {
                     "type": {
-                      "com.linkedin.pegasus2avro.schema.StringType": {}
+                      "com.linkedin.pegasus2avro.schema.NumberType": {}
                     }
                   },
                   "nativeDataType": "double",

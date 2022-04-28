@@ -1,3 +1,4 @@
+from ast import Return
 from dataclasses import dataclass, field
 from typing import Generator, Iterable, Union
 
@@ -28,22 +29,22 @@ class ThriftSourceConfig(ConfigModel):
     filename: str
 
 
-class ThriftVisitor(ThriftGrammerVisitor):
-    def visitDocument(
+class Binder:
+    def bind_MCEs_from_Document(
         self, ctx: ThriftGrammerParser.DocumentContext
     ) -> Generator[MetadataChangeEvent, None, None]:
         for definition in ctx.definition():
-            yield self.visit(definition)
+            yield self.bind_MCE_from_Definition(definition)
 
-    def visitDefinition(
+    def bind_MCE_from_Definition(
         self, ctx: ThriftGrammerParser.DefinitionContext
     ) -> MetadataChangeEvent:
         if ctx.struct_():
-            return self.visit(ctx.struct_())
+            return self.bind_MCE_from_struct_(ctx.struct_())
         else:
             raise NotImplementedError()
 
-    def visitStruct_(
+    def bind_MCE_from_struct_(
         self, ctx: ThriftGrammerParser.Struct_Context
     ) -> MetadataChangeEvent:
         name = ctx.IDENTIFIER().getText()
@@ -58,34 +59,42 @@ class ThriftVisitor(ThriftGrammerVisitor):
                         version=0,
                         hash="",
                         platformSchema=OtherSchema(""),
-                        fields=[self.visit(field) for field in ctx.field()],
+                        fields=[self.bind_SchemaField_from_field(field) for field in ctx.field()],
                     )
                 ],
             )
         )
 
-    def visitField(self, ctx: ThriftGrammerParser.FieldContext) -> SchemaField:
+    def bind_SchemaField_from_field(self, ctx: ThriftGrammerParser.FieldContext) -> SchemaField:
         return SchemaField(
             fieldPath=ctx.IDENTIFIER().getText(),
-            type=self.visit(ctx.field_type()),
-            nativeDataType=ctx.field_type().getText(),
+            type=self.bind_SchemaFieldDataType_from_field_type(ctx.field_type()),
+            nativeDataType=self.bind_nativeDataType_from_field_type(ctx.field_type())
         )
 
-    def visitField_type(
+    def bind_nativeDataType_from_field_type(self, ctx: ThriftGrammerParser.Field_typeContext) -> SchemaField:
+        if ctx.base_type():
+            return ctx.getText()
+        else:
+            raise NotImplementedError()
+
+    def bind_SchemaFieldDataType_from_field_type(
         self, ctx: ThriftGrammerParser.Field_typeContext
     ) -> SchemaFieldDataType:
         if ctx.base_type():
+            return self.bind_SchemaFieldDataType_from_base_type(ctx.base_type())
+        else:
             raise NotImplementedError()
 
-    def visitBase_type(
+    def bind_SchemaFieldDataType_from_base_type(
         self, ctx: ThriftGrammerParser.Base_typeContext
     ) -> SchemaFieldDataType:
-        return self.visit(ctx.real_base_type())
+        return self.bind_SchemaFieldDataType_from_Real_base_type(ctx.real_base_type())
 
-    def visitReal_base_type(
+    def bind_SchemaFieldDataType_from_Real_base_type(
         self, ctx: ThriftGrammerParser.Real_base_typeContext
     ) -> SchemaFieldDataType:
-        if ctx.TYPE_I32():
+        if ctx.TYPE_I32() or ctx.TYPE_I64()or ctx.TYPE_DOUBLE():
             return SchemaFieldDataType(NumberType())
         elif ctx.TYPE_STRING:
             return SchemaFieldDataType(StringType())
@@ -114,9 +123,8 @@ class ThriftSource(Source):
 
             tree = parser.document()
             # evaluator
-            visitor = ThriftVisitor()
+            yield from Binder().bind_MCEs_from_Document(tree)
 
-            yield from visitor.visit(tree)
 
     def get_workunits(self) -> Iterable[Union[MetadataWorkUnit, UsageStatsWorkUnit]]:
         for i, obj in enumerate(self.parse(self.config.filename)):

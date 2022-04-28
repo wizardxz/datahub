@@ -78,7 +78,7 @@ task lintFix(type: Exec, dependsOn: installDev) {
     "mypy src/ tests/ examples/"
 }
 
-task generate_dist(type:Exec, dependsOn: installDev) {
+task generate_Thrift_Grammer(type:Exec, dependsOn: installDev) {
   commandLine 'bash', '-x', '-c',
     "antlr4 -Dlanguage=Python3 src/datahub/ingestion/source/ThriftGrammer.g4 -visitor -o src/datahub/ingestion/source/dist"
 
@@ -131,6 +131,7 @@ task cleanPythonCache(type: Exec) {
 }
 
 build.dependsOn install
+build.dependsOn generate_Thrift_Grammer
 check.dependsOn lint
 check.dependsOn testQuick
 
@@ -138,6 +139,7 @@ clean {
   delete venv_name
   delete 'build'
   delete 'dist'
+  delete 'src/datahub/ingestion/source/dist'
   delete 'src/datahub/metadata'
   delete '../docs/generated'
 }

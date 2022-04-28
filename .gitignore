@@ -21,7 +21,6 @@ metadata-events/mxe-registration/src/main/resources/**/*.avsc
 
 # Python
 .venv
-datahub-env/
 venv/
 env.bak/
 venv.bak/
