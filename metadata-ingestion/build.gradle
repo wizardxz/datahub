@@ -66,19 +66,18 @@ task lint(type: Exec, dependsOn: installDev) {
    */
   commandLine 'bash', '-x', '-c',
     "find ${venv_name}/lib -path *airflow/_vendor/connexion/spec.py -exec sed -i.bak -e '169,169s/  # type: List\\[str\\]//g' {} \\; && " +
-    "source ${venv_name}/bin/activate && black --check --diff src/ tests/ examples/ && isort --check --diff src/ tests/ examples/ && flake8 --count --statistics src/ tests/ examples/ && mypy src/ tests/ examples/"
+    "source ${venv_name}/bin/activate && black --check --diff src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && isort --check --diff src/ tests/ examples/ -s src/datahub/ingestion/source/dist/ && flake8 --count --statistics src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
 }
-
 task lintFix(type: Exec, dependsOn: installDev) {
   commandLine 'bash', '-x', '-c',
     "source ${venv_name}/bin/activate && " +
-    "black src/ tests/ examples/ && " +
-    "isort src/ tests/ examples/ && " +
-    "flake8 src/ tests/ examples/ && " +
-    "mypy src/ tests/ examples/"
+    "black src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && " +
+    "isort src/ tests/ examples/ -s src/datahub/ingestion/source/dist/ && " +
+    "flake8 src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && " +
+    "mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
 }
 
-task generate_Thrift_Grammer(type:Exec, dependsOn: installDev) {
+task generate_Thrift_Grammar(type:Exec, dependsOn: installDev) {
   commandLine 'bash', '-x', '-c',
     "antlr4 -Dlanguage=Python3 src/datahub/ingestion/source/ThriftGrammer.g4 -visitor -o src/datahub/ingestion/source/dist"
 
@@ -131,7 +130,7 @@ task cleanPythonCache(type: Exec) {
 }
 
 build.dependsOn install
-build.dependsOn generate_Thrift_Grammer
+build.dependsOn generate_Thrift_Grammar
 check.dependsOn lint
 check.dependsOn testQuick
 
