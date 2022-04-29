@@ -1,6 +1,14 @@
 plugins {
     id 'base'
+    id 'antlr'
 }
+
+apply plugin: 'java'
+def f = new File('./metadata-ingestion/generated/antlr-4.10.1-complete.jar')
+if (!f.exists()) {
+    new URL('https://www.antlr.org/download/antlr-4.10.1-complete.jar').withInputStream{ i -> f.withOutputStream{ it << i }}
+}  
+
 
 ext {
   python_executable = 'python3'
@@ -33,9 +41,9 @@ task codegen(type: Exec, dependsOn: [environmentSetup, installPackage, ':metadat
   commandLine 'bash', '-c', "source ${venv_name}/bin/activate && ./scripts/codegen.sh"
 }
 
-task install(dependsOn: [installPackage, codegen])
+task install_init(dependsOn: [installPackage, codegen])
 
-task installDev(type: Exec, dependsOn: [install]) {
+task installDev(type: Exec, dependsOn: [install_init]) {
   inputs.file file('setup.py')
   outputs.dir("${venv_name}")
   outputs.file("${venv_name}/.build_install_dev_sentinel")
@@ -77,11 +85,21 @@ task lintFix(type: Exec, dependsOn: installDev) {
     "mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
 }
 
-task generate_Thrift_Grammar(type:Exec, dependsOn: installDev) {
-  commandLine 'bash', '-x', '-c',
-    "antlr4 -Dlanguage=Python3 src/datahub/ingestion/source/ThriftGrammer.g4 -visitor -o src/datahub/ingestion/source/dist"
-
-}
+task generate_Thrift_Grammar(dependsOn:jar) { 
+  def antlr_util="../../../../generated/antlr-4.10.1-complete.jar"
+  javaexec { 
+    main="-jar";
+    workingDir="src/datahub/ingestion/source"
+    args = [
+            antlr_util,
+            '-Dlanguage=Python3',
+            'ThriftGrammer.g4',
+            '-visitor',
+            '-o',
+            'dist'
+           ]
+  }   
+} 
 
 task testQuick(type: Exec, dependsOn: installDev) {
   // We can't enforce the coverage requirements if we run a subset of the tests.
@@ -129,7 +147,7 @@ task cleanPythonCache(type: Exec) {
     "find src -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete -o -type d -empty -delete"
 }
 
-build.dependsOn install
+build.dependsOn install_init
 build.dependsOn generate_Thrift_Grammar
 check.dependsOn lint
 check.dependsOn testQuick
