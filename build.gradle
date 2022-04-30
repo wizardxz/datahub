@@ -16,11 +16,20 @@ buildscript {
     }
     classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.30.0"
     classpath "com.palantir.gradle.gitversion:gradle-git-version:0.12.3"
+    classpath "org.antlr:antlr4:4.7.2"
   }
 }
 
 plugins {
   id 'com.gorylenko.gradle-git-properties' version '2.4.0-rc2'
+}
+
+task generate_Thrift_Grammar(type: JavaExec) {
+  classpath = buildscript.configurations.classpath
+  mainClass = 'org.antlr.v4.Tool'
+  ignoreExitValue true
+  workingDir="metadata-ingestion/src/datahub/ingestion/source"
+  args '-Dlanguage=Python3', 'ThriftGrammer.g4', '-visitor', '-o', 'dist'
 }
 
 project.ext.spec = [
