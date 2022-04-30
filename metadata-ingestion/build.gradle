@@ -83,7 +83,7 @@ task lintFix(type: Exec, dependsOn: installDev) {
     "mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
 }
 
-task generate_Thrift_Grammar(type: JavaExec) {
+task generateThriftGrammar(type: JavaExec) {
   classpath = buildscript.configurations.classpath
   mainClass = 'org.antlr.v4.Tool'
   ignoreExitValue true
@@ -138,7 +138,7 @@ task cleanPythonCache(type: Exec) {
 }
 
 build.dependsOn install_init
-build.dependsOn generate_Thrift_Grammar
+build.dependsOn generateThriftGrammar
 check.dependsOn lint
 check.dependsOn testQuick
 

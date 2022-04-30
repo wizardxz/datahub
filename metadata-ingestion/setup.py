@@ -186,7 +186,7 @@ plugins: Dict[str, Set[str]] = {
         # - 0.6.12 adds support for Spark Thrift Server
         "acryl-pyhive[hive]>=0.6.12"
     },
-    "thrift": {"antlr4-python3-runtime"},
+    "thrift": {"antlr4-python3-runtime==4.7.2"},
     "kafka": kafka_common,
     "kafka-connect": sql_common | {"requests", "JPype1"},
     "ldap": {"python-ldap>=2.4"},
