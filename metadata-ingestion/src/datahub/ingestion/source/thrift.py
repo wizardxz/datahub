@@ -11,12 +11,14 @@ from datahub.ingestion.source.dist.ThriftLexer import ThriftLexer  # type: ignor
 from datahub.ingestion.source.dist.ThriftParser import ThriftParser  # type: ignore
 from datahub.metadata.com.linkedin.pegasus2avro.events.metadata import ChangeType
 from datahub.metadata.com.linkedin.pegasus2avro.schema import (
+    ArrayType,
     NumberType,
     OtherSchema,
     SchemaField,
     SchemaFieldDataType,
     SchemaMetadata,
     StringType,
+    MapType,
 )
 
 
@@ -68,22 +70,20 @@ class Binder:
         return SchemaField(
             fieldPath=ctx.IDENTIFIER().getText(),
             type=self.bind_SchemaFieldDataType_from_field_type(ctx.field_type()),
-            nativeDataType=self.bind_nativeDataType_from_field_type(ctx.field_type()),
+            nativeDataType=self.bind_str_from_field_type(ctx.field_type()),
         )
 
-    def bind_nativeDataType_from_field_type(
-        self, ctx: ThriftParser.Field_typeContext
-    ) -> str:
-        if ctx.base_type():
-            return ctx.getText()
-        else:
-            raise NotImplementedError()
 
     def bind_SchemaFieldDataType_from_field_type(
         self, ctx: ThriftParser.Field_typeContext
     ) -> SchemaFieldDataType:
         if ctx.base_type():
             return self.bind_SchemaFieldDataType_from_base_type(ctx.base_type())
+        elif ctx.container_type():
+            return self.bind_SchemaFieldDataType_from_container_type(
+                ctx.container_type()
+            )
+        
         else:
             raise NotImplementedError()
 
@@ -91,6 +91,79 @@ class Binder:
         self, ctx: ThriftParser.Base_typeContext
     ) -> SchemaFieldDataType:
         return self.bind_SchemaFieldDataType_from_Real_base_type(ctx.real_base_type())
+
+    def bind_SchemaFieldDataType_from_container_type(
+        self, ctx: ThriftParser.Container_typeContext
+    ) -> SchemaFieldDataType:
+        if ctx.list_type():
+            return self.bind_SchemaFieldDataType_from_list_type(ctx.list_type())
+        elif ctx.map_type():
+            return self.bind_SchemaFieldDataType_from_map_type(ctx.map_type())
+        elif ctx.set_type():
+            return self.bind_SchemaFieldDataType_from_set_type(ctx.set_type())
+        else:
+            raise NotImplementedError()
+
+    def bind_SchemaFieldDataType_from_map_type(
+        self, ctx: ThriftParser.Map_typeContext
+    ) -> SchemaFieldDataType:
+
+        return SchemaFieldDataType(
+            MapType(
+                self.bind_str_from_field_type(ctx.field_type()[0]),
+                self.bind_str_from_field_type(ctx.field_type()[1])
+                )
+        )
+
+    def bind_SchemaFieldDataType_from_list_type(
+        self, ctx: ThriftParser.List_typeContext
+    ) -> SchemaFieldDataType:
+
+        return SchemaFieldDataType(
+            ArrayType([self.bind_str_from_field_type(ctx.field_type())])
+        )
+
+    def bind_SchemaFieldDataType_from_set_type(
+        self, ctx: ThriftParser.Set_typeContext
+    ) -> SchemaFieldDataType:
+
+        return SchemaFieldDataType(
+            ArrayType([self.bind_str_from_field_type(ctx.field_type())])
+        )
+
+    def bind_str_from_field_type(
+        self, ctx: ThriftParser.Field_typeContext
+    ) -> str:
+        if ctx.base_type():
+            return self.bind_str_from_base_type(ctx.base_type())
+        elif ctx.container_type():
+            return self.bind_str_from_container_type(ctx.container_type())
+        else:
+            raise NotImplementedError()
+
+    def bind_str_from_container_type(
+        self, ctx: ThriftParser.Container_typeContext
+    ) -> str:
+        if ctx.list_type():
+            return self.bind_str_from_list_type(ctx.list_type())
+        elif ctx.map_type():
+            return self.bind_str_from_map_type(ctx.map_type())
+        elif ctx.set_type():
+            return self.bind_str_from_set_type(ctx.set_type())
+        else:
+            raise NotImplementedError()
+
+    def bind_str_from_list_type(self, ctx: ThriftParser.List_typeContext) -> str:
+        return f"list<{self.bind_str_from_field_type(ctx.field_type())}>"
+
+    def bind_str_from_set_type(self, ctx: ThriftParser.Set_typeContext) -> str:
+        return f"set<{self.bind_str_from_field_type(ctx.field_type())}>"
+
+    def bind_str_from_map_type(self, ctx: ThriftParser.Map_typeContext) -> str:
+        return f"map<{self.bind_str_from_field_type(ctx.field_type()[0])},{self.bind_str_from_field_type(ctx.field_type()[1])}>"
+
+    def bind_str_from_base_type(self, ctx: ThriftParser.Base_typeContext) -> str:
+        return ctx.real_base_type().getText()
 
     def bind_SchemaFieldDataType_from_Real_base_type(
         self, ctx: ThriftParser.Real_base_typeContext

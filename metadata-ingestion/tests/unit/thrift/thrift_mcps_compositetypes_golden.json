@@ -1,0 +1,15 @@
+[
+  {
+    "auditHeader": null,
+    "entityType": "dataset",
+    "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:thrift,Work,PROD)",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "schemaMetadata",
+    "aspect": {
+      "value": "{\"schemaName\": \"Work\", \"platform\": \"urn:li:dataPlatform:thrift\", \"version\": 0, \"created\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"lastModified\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"hash\": \"\", \"platformSchema\": {\"com.linkedin.schema.OtherSchema\": {\"rawSchema\": \"\"}}, \"fields\": [{\"fieldPath\": \"num1\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.ArrayType\": {\"nestedType\": [\"list<i64>\"]}}}, \"nativeDataType\": \"list<list<i64>>\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"num2\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.MapType\": {\"keyType\": \"map<i64,i64>\", \"valueType\": \"map<i64,i64>\"}}}, \"nativeDataType\": \"map<map<i64,i64>,map<i64,i64>>\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"num5\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.ArrayType\": {\"nestedType\": [\"set<i64>\"]}}}, \"nativeDataType\": \"set<set<i64>>\", \"recursive\": false, \"isPartOfKey\": false}]}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  }
+]
