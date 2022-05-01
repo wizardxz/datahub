@@ -88,7 +88,7 @@ task generateThriftGrammar(type: JavaExec) {
   mainClass = 'org.antlr.v4.Tool'
   ignoreExitValue true
   workingDir="src/datahub/ingestion/source"
-  args '-Dlanguage=Python3', 'ThriftGrammer.g4', '-visitor', '-o', 'dist'
+  args '-Dlanguage=Python3', 'Thrift.g4', '-visitor', '-o', 'dist'
 }
 
 task testQuick(type: Exec, dependsOn: installDev) {

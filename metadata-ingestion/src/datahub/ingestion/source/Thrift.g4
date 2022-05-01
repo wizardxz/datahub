@@ -1,4 +1,4 @@
-grammar ThriftGrammer;
+grammar Thrift;
 
 document
     : header* definition* EOF

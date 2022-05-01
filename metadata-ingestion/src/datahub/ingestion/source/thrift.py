@@ -7,12 +7,8 @@ from datahub.configuration.common import ConfigModel
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.ingestion.api.source import Source, SourceReport
 from datahub.ingestion.api.workunit import MetadataWorkUnit, UsageStatsWorkUnit
-from datahub.ingestion.source.dist.ThriftGrammerLexer import (  # type: ignore
-    ThriftGrammerLexer,
-)
-from datahub.ingestion.source.dist.ThriftGrammerParser import (  # type: ignore
-    ThriftGrammerParser,
-)
+from datahub.ingestion.source.dist.ThriftLexer import ThriftLexer  # type: ignore
+from datahub.ingestion.source.dist.ThriftParser import ThriftParser  # type: ignore
 from datahub.metadata.com.linkedin.pegasus2avro.events.metadata import ChangeType
 from datahub.metadata.com.linkedin.pegasus2avro.schema import (
     NumberType,
@@ -30,13 +26,13 @@ class ThriftSourceConfig(ConfigModel):
 
 class Binder:
     def bind_MCPs_from_Document(
-        self, ctx: ThriftGrammerParser.DocumentContext
+        self, ctx: ThriftParser.DocumentContext
     ) -> Generator[MetadataChangeProposalWrapper, None, None]:
         for definition in ctx.definition():
             yield from self.bind_MCPs_from_Definition(definition)
 
     def bind_MCPs_from_Definition(
-        self, ctx: ThriftGrammerParser.DefinitionContext
+        self, ctx: ThriftParser.DefinitionContext
     ) -> Generator[MetadataChangeProposalWrapper, None, None]:
         if ctx.struct_():
             yield from self.bind_MCPs_from_struct_(ctx.struct_())
@@ -44,7 +40,7 @@ class Binder:
             raise NotImplementedError()
 
     def bind_MCPs_from_struct_(
-        self, ctx: ThriftGrammerParser.Struct_Context
+        self, ctx: ThriftParser.Struct_Context
     ) -> Generator[MetadataChangeProposalWrapper, None, None]:
 
         name = ctx.IDENTIFIER().getText()
@@ -67,7 +63,7 @@ class Binder:
         )
 
     def bind_SchemaField_from_field(
-        self, ctx: ThriftGrammerParser.FieldContext
+        self, ctx: ThriftParser.FieldContext
     ) -> SchemaField:
         return SchemaField(
             fieldPath=ctx.IDENTIFIER().getText(),
@@ -76,7 +72,7 @@ class Binder:
         )
 
     def bind_nativeDataType_from_field_type(
-        self, ctx: ThriftGrammerParser.Field_typeContext
+        self, ctx: ThriftParser.Field_typeContext
     ) -> str:
         if ctx.base_type():
             return ctx.getText()
@@ -84,7 +80,7 @@ class Binder:
             raise NotImplementedError()
 
     def bind_SchemaFieldDataType_from_field_type(
-        self, ctx: ThriftGrammerParser.Field_typeContext
+        self, ctx: ThriftParser.Field_typeContext
     ) -> SchemaFieldDataType:
         if ctx.base_type():
             return self.bind_SchemaFieldDataType_from_base_type(ctx.base_type())
@@ -92,12 +88,12 @@ class Binder:
             raise NotImplementedError()
 
     def bind_SchemaFieldDataType_from_base_type(
-        self, ctx: ThriftGrammerParser.Base_typeContext
+        self, ctx: ThriftParser.Base_typeContext
     ) -> SchemaFieldDataType:
         return self.bind_SchemaFieldDataType_from_Real_base_type(ctx.real_base_type())
 
     def bind_SchemaFieldDataType_from_Real_base_type(
-        self, ctx: ThriftGrammerParser.Real_base_typeContext
+        self, ctx: ThriftParser.Real_base_typeContext
     ) -> SchemaFieldDataType:
         if ctx.TYPE_I32() or ctx.TYPE_I64() or ctx.TYPE_DOUBLE():
             return SchemaFieldDataType(NumberType())
@@ -123,10 +119,10 @@ class ThriftSource(Source):
         with open(filename) as text_file:
             # lexer
 
-            lexer = ThriftGrammerLexer(InputStream(text_file.read()))
+            lexer = ThriftLexer(InputStream(text_file.read()))
             stream = CommonTokenStream(lexer)
             # parser
-            parser = ThriftGrammerParser(stream)
+            parser = ThriftParser(stream)
 
             tree = parser.document()
             # evaluator
