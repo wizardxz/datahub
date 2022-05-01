@@ -39,9 +39,9 @@ task codegen(type: Exec, dependsOn: [environmentSetup, installPackage, ':metadat
   commandLine 'bash', '-c', "source ${venv_name}/bin/activate && ./scripts/codegen.sh"
 }
 
-task install_init(dependsOn: [installPackage, codegen])
+task install(dependsOn: [installPackage, codegen])
 
-task installDev(type: Exec, dependsOn: [install_init]) {
+task installDev(type: Exec, dependsOn: [install]) {
   inputs.file file('setup.py')
   outputs.dir("${venv_name}")
   outputs.file("${venv_name}/.build_install_dev_sentinel")
@@ -137,7 +137,7 @@ task cleanPythonCache(type: Exec) {
     "find src -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete -o -type d -empty -delete"
 }
 
-build.dependsOn install_init
+build.dependsOn install
 build.dependsOn generateThriftGrammar
 check.dependsOn lint
 check.dependsOn testQuick
