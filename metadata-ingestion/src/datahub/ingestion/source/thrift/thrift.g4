@@ -1,5 +1,9 @@
-grammar Thrift;
-
+grammar thrift;
+/*
+This file displays the grammar of thrift file and the structure of the tree parsed by Antlr
+The documentation of Antlr is here: https://www.antlr.org/
+ */
+ 
 document
     : header* definition* EOF
     ;

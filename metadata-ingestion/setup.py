@@ -455,7 +455,7 @@ entry_points = {
         "nifi = datahub.ingestion.source.nifi:NifiSource",
         "powerbi = datahub.ingestion.source.powerbi:PowerBiDashboardSource",
         "presto-on-hive = datahub.ingestion.source.sql.presto_on_hive:PrestoOnHiveSource",
-        "thrift = datahub.ingestion.source.thrift:ThriftSource"
+        "thrift = datahub.ingestion.source.thrift.thrift:ThriftSource"
     ],
     "datahub.ingestion.sink.plugins": [
         "file = datahub.ingestion.sink.file:FileSink",

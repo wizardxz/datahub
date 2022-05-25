@@ -72,23 +72,23 @@ task lint(type: Exec, dependsOn: installDev) {
    */
   commandLine 'bash', '-x', '-c',
     "find ${venv_name}/lib -path *airflow/_vendor/connexion/spec.py -exec sed -i.bak -e '169,169s/  # type: List\\[str\\]//g' {} \\; && " +
-    "source ${venv_name}/bin/activate && black --check --diff src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && isort --check --diff src/ tests/ examples/ -s src/datahub/ingestion/source/dist/ && flake8 --count --statistics src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
+    "source ${venv_name}/bin/activate && black --check --diff src/ tests/ examples/ --exclude src/datahub/ingestion/source/thrift/dist/ && isort --check --diff src/ tests/ examples/ -s src/datahub/ingestion/source/thrift/dist/ && flake8 --count --statistics src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/thrift/dist/"
 }
 task lintFix(type: Exec, dependsOn: installDev) {
   commandLine 'bash', '-x', '-c',
     "source ${venv_name}/bin/activate && " +
-    "black src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && " +
-    "isort src/ tests/ examples/ -s src/datahub/ingestion/source/dist/ && " +
-    "flake8 src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/ && " +
-    "mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/dist/"
+    "black src/ tests/ examples/ --exclude src/datahub/ingestion/source/thrift/dist/ && " +
+    "isort src/ tests/ examples/ -s src/datahub/ingestion/source/thrift/dist/ && " +
+    "flake8 src/ tests/ examples/ --exclude src/datahub/ingestion/source/thrift/dist/ && " +
+    "mypy src/ tests/ examples/ --exclude src/datahub/ingestion/source/thrift/dist/"
 }
 
 task generateThriftGrammar(type: JavaExec) {
   classpath = buildscript.configurations.classpath
   mainClass = 'org.antlr.v4.Tool'
   ignoreExitValue true
-  workingDir="src/datahub/ingestion/source"
-  args '-Dlanguage=Python3', 'Thrift.g4', '-visitor', '-o', 'dist'
+  workingDir="src/datahub/ingestion/source/thrift"
+  args '-Dlanguage=Python3', 'thrift.g4', '-visitor', '-o', 'dist'
 }
 
 task testQuick(type: Exec, dependsOn: installDev) {

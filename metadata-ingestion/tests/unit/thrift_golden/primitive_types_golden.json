@@ -1,0 +1,15 @@
+[
+  {
+    "auditHeader": null,
+    "entityType": "dataset",
+    "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company1.PrimitiveTypes,PROD)",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "schemaMetadata",
+    "aspect": {
+      "value": "{\"schemaName\": \"PrimitiveTypes\", \"platform\": \"urn:li:dataPlatform:thrift\", \"version\": 0, \"created\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"lastModified\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"hash\": \"\", \"platformSchema\": {\"com.linkedin.schema.OtherSchema\": {\"rawSchema\": \"structPrimitiveTypes{1:boolboolValue2:bytebyteValue3:i16i16Value4:i32i32Value5:i64i64Value6:doubledoubleValue7:stringstringValue}\"}}, \"fields\": [{\"fieldPath\": \"boolValue\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.BooleanType\": {}}}, \"nativeDataType\": \"bool\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"byteValue\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"byte\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"i16Value\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"i16\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"i32Value\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"i32\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"i64Value\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"i64\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"doubleValue\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"double\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"stringValue\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.StringType\": {}}}, \"nativeDataType\": \"string\", \"recursive\": false, \"isPartOfKey\": false}]}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  }
+]
