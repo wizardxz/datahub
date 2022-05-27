@@ -11,9 +11,11 @@ from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.ingestion.api.common import WorkUnit
 from datahub.ingestion.api.source import Source, SourceReport
 from datahub.ingestion.api.workunit import MetadataWorkUnit, UsageStatsWorkUnit
-from datahub.ingestion.source.thrift.dist.thriftLexer import thriftLexer  # type: ignore
-from datahub.ingestion.source.thrift.dist.thriftParser import thriftParser  # type: ignore
-from datahub.ingestion.source.thrift.dist.thriftVisitor import thriftVisitor  # type: ignore
+from datahub.ingestion.source.thrift.parse_tools import (  # type: ignore
+    thriftLexer,
+    thriftParser,
+    thriftVisitor,
+)
 from datahub.metadata.com.linkedin.pegasus2avro.events.metadata import ChangeType
 from datahub.metadata.com.linkedin.pegasus2avro.schema import (
     BooleanType,
@@ -213,7 +215,9 @@ class GetHeader(thriftVisitor):
         elif ctx.LITERAL():
             return NameResolver().add_namespace("*", get_literal_text(ctx.LITERAL()))
         else:
-            raise NotImplementedError("only support IDENTIFIER OR LITERAL as namespace name")
+            raise NotImplementedError(
+                "only support IDENTIFIER OR LITERAL as namespace name"
+            )
 
     def visitExplicitNamespace(
         self, ctx: thriftParser.Namespace_Context
@@ -227,7 +231,9 @@ class GetHeader(thriftVisitor):
                 language, get_literal_text(ctx.LITERAL())
             )
         else:
-            raise NotImplementedError("only support IDENTIFIER OR LITERAL as namespace name")
+            raise NotImplementedError(
+                "only support IDENTIFIER OR LITERAL as namespace name"
+            )
 
     def visitCppNamespace(self, ctx: thriftParser.Namespace_Context) -> NameResolver:
         return NameResolver().add_namespace("cpp", ctx.IDENTIFIER()[0].getText())
@@ -257,7 +263,6 @@ class GetNameResolver(thriftVisitor):
             return self.visitStruct_(ctx.struct_())
         else:
             raise NotImplementedError("can only process struct")
-
 
     def visitStruct_(self, ctx: thriftParser.Struct_Context) -> NameResolver:
         return self.header.add_struct(ctx.IDENTIFIER().getText())
@@ -459,9 +464,7 @@ class ThriftSource(Source):
                 print(f"Processing {filename}")
                 tree = parsefile(filename)
                 # evaluator
-                yield from get_binder(
-                    filename
-                ).bind_MCPs_from_Document(tree)
+                yield from get_binder(filename).bind_MCPs_from_Document(tree)
             elif os.path.isdir(filename):
                 for f in os.listdir(filename):
                     yield from self.parse(os.path.join(filename, f))
@@ -469,9 +472,7 @@ class ThriftSource(Source):
             self.report.errors.append(f"Error: {e}")
 
     def get_workunits(self) -> Iterable[Union[MetadataWorkUnit, UsageStatsWorkUnit]]:
-        for i, obj in enumerate(
-            self.parse(self.config.filename)
-        ):
+        for i, obj in enumerate(self.parse(self.config.filename)):
             wu = MetadataWorkUnit(f"file://{self.config.filename}:{i}", mcp=obj)
             self.report.report_workunit(wu)
             yield wu
