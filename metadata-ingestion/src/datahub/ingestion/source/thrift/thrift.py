@@ -368,7 +368,7 @@ class GetNameResolver(thriftVisitor):
         elif ctx.const_rule():
             return self.visitConst_rule(ctx.const_rule())
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
     def visitConst_rule(self, ctx: thriftParser.Const_ruleContext) -> NameResolver:
         return self.header.add_const_value(
@@ -992,7 +992,7 @@ class Binder:
             return self.bind_SchemaFieldDataType_from_IDENTIFIER(ctx.IDENTIFIER())
 
         else:
-            raise ValueError()
+            raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
     def bind_SchemaFieldDataType_from_IDENTIFIER(
         self, ctx: thriftParser.IDENTIFIER
@@ -1116,7 +1116,7 @@ class ThriftReport(SourceReport):
 @dataclass
 class ThriftSource(Source):
     config: ThriftSourceConfig
-    report: SourceReport = field(default_factory=SourceReport)
+    report: ThriftReport = field(default_factory=ThriftReport)
 
     @classmethod
     def create(cls, config_dict, ctx):
