@@ -1,0 +1,67 @@
+[
+  {
+    "auditHeader": null,
+    "entityType": "dataset",
+    "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.S1,PROD)",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "schemaMetadata",
+    "aspect": {
+      "value": "{\"schemaName\": \"S1\", \"platform\": \"urn:li:dataPlatform:thrift\", \"version\": 0, \"created\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"lastModified\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"hash\": \"\", \"platformSchema\": {\"com.linkedin.schema.ThriftSchema\": {\"rawSchema\": \"structS1{1:S3structValue}\", \"filename\": \"./tests/unit/thrift_files/nested_types.thrift\", \"fields\": [{\"name\": \"structValue\", \"index\": 1, \"hyperType\": [{\"com.linkedin.schema.HyperTypeUrnToken\": {\"text\": \"S2\", \"urn\": \"urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.S2,PROD)\"}}]}], \"namespace_\": {\"*\": \"com.company\"}}}, \"fields\": [{\"fieldPath\": \"structValue\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.RecordType\": {}}}, \"nativeDataType\": \"S2\", \"recursive\": false, \"isPartOfKey\": false}]}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  },
+  {
+    "auditHeader": null,
+    "entityType": "dataset",
+    "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.U1,PROD)",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "schemaMetadata",
+    "aspect": {
+      "value": "{\"schemaName\": \"U1\", \"platform\": \"urn:li:dataPlatform:thrift\", \"version\": 0, \"created\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"lastModified\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"hash\": \"\", \"platformSchema\": {\"com.linkedin.schema.ThriftSchema\": {\"rawSchema\": \"unionU1{1:E1enumValue2:S2structValue}\", \"filename\": \"./tests/unit/thrift_files/nested_types.thrift\", \"fields\": [{\"name\": \"enumValue\", \"index\": 1, \"hyperType\": [{\"com.linkedin.schema.HyperTypeUrnToken\": {\"text\": \"E1\", \"urn\": \"urn:li:thriftEnum:com.company.E1\"}}]}, {\"name\": \"structValue\", \"index\": 2, \"hyperType\": [{\"com.linkedin.schema.HyperTypeUrnToken\": {\"text\": \"S2\", \"urn\": \"urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.S2,PROD)\"}}]}], \"namespace_\": {\"*\": \"com.company\"}}}, \"fields\": [{\"fieldPath\": \"enumValue\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.EnumType\": {}}}, \"nativeDataType\": \"E1\", \"recursive\": false, \"isPartOfKey\": false}, {\"fieldPath\": \"structValue\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.RecordType\": {}}}, \"nativeDataType\": \"S2\", \"recursive\": false, \"isPartOfKey\": false}]}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  },
+  {
+    "auditHeader": null,
+    "entityType": "thriftEnum",
+    "entityUrn": "urn:li:thriftEnum:com.company.E1",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "thriftEnumKey",
+    "aspect": {
+      "value": "{\"name\": \"E1\"}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  },
+  {
+    "auditHeader": null,
+    "entityType": "thriftEnum",
+    "entityUrn": "urn:li:thriftEnum:com.company.E1",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "thriftEnumProperties",
+    "aspect": {
+      "value": "{\"items\": [{\"key\": \"APPLE\", \"value\": {\"int\": 1}}, {\"key\": \"ORANGE\", \"value\": {\"int\": 2}}], \"namespace_\": {\"*\": \"com.company\"}}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  },
+  {
+    "auditHeader": null,
+    "entityType": "dataset",
+    "entityUrn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.S2,PROD)",
+    "entityKeyAspect": null,
+    "changeType": "UPSERT",
+    "aspectName": "schemaMetadata",
+    "aspect": {
+      "value": "{\"schemaName\": \"S2\", \"platform\": \"urn:li:dataPlatform:thrift\", \"version\": 0, \"created\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"lastModified\": {\"time\": 0, \"actor\": \"urn:li:corpuser:unknown\"}, \"hash\": \"\", \"platformSchema\": {\"com.linkedin.schema.ThriftSchema\": {\"rawSchema\": \"structS2{1:i64i64Value}\", \"filename\": \"./tests/unit/thrift_files/nested_types.thrift\", \"fields\": [{\"name\": \"i64Value\", \"index\": 1, \"hyperType\": [{\"com.linkedin.schema.HyperTypeTextToken\": {\"text\": \"i64\"}}]}], \"namespace_\": {\"*\": \"com.company\"}}}, \"fields\": [{\"fieldPath\": \"i64Value\", \"nullable\": false, \"type\": {\"type\": {\"com.linkedin.schema.NumberType\": {}}}, \"nativeDataType\": \"i64\", \"recursive\": false, \"isPartOfKey\": false}]}",
+      "contentType": "application/json"
+    },
+    "systemMetadata": null
+  }
+]

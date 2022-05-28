@@ -126,6 +126,7 @@ import com.linkedin.datahub.graphql.resolvers.tag.SetTagColorResolver;
 import com.linkedin.datahub.graphql.resolvers.type.AspectInterfaceTypeResolver;
 import com.linkedin.datahub.graphql.resolvers.type.EntityInterfaceTypeResolver;
 import com.linkedin.datahub.graphql.resolvers.type.HyperParameterValueTypeResolver;
+import com.linkedin.datahub.graphql.resolvers.type.HyperTypeTokenResolver;
 import com.linkedin.datahub.graphql.resolvers.type.PlatformSchemaUnionTypeResolver;
 import com.linkedin.datahub.graphql.resolvers.type.ResultsTypeResolver;
 import com.linkedin.datahub.graphql.resolvers.type.TimeSeriesAspectInterfaceTypeResolver;
@@ -158,6 +159,7 @@ import com.linkedin.datahub.graphql.types.mlmodel.MLModelGroupType;
 import com.linkedin.datahub.graphql.types.mlmodel.MLModelType;
 import com.linkedin.datahub.graphql.types.mlmodel.MLPrimaryKeyType;
 import com.linkedin.datahub.graphql.types.tag.TagType;
+import com.linkedin.datahub.graphql.types.thrift.ThriftEnumType;
 import com.linkedin.datahub.graphql.types.usage.UsageType;
 import com.linkedin.entity.client.EntityClient;
 import com.linkedin.metadata.config.IngestionConfiguration;
@@ -247,6 +249,7 @@ public class GmsGraphQLEngine {
     private final DomainType domainType;
     private final NotebookType notebookType;
     private final AssertionType assertionType;
+    private final ThriftEnumType thriftEnumType;
 
 
     /**
@@ -354,6 +357,7 @@ public class GmsGraphQLEngine {
         this.domainType = new DomainType(entityClient);
         this.notebookType = new NotebookType(entityClient);
         this.assertionType = new AssertionType(entityClient);
+        this.thriftEnumType = new ThriftEnumType(entityClient);
 
         // Init Lists
         this.entityTypes = ImmutableList.of(
@@ -375,7 +379,8 @@ public class GmsGraphQLEngine {
             containerType,
             notebookType,
             domainType,
-            assertionType
+            assertionType,
+            thriftEnumType
         );
         this.loadableTypes = new ArrayList<>(entityTypes);
         this.ownerTypes = ImmutableList.of(corpUserType, corpGroupType);
@@ -668,6 +673,10 @@ public class GmsGraphQLEngine {
                 new GetIngestionSourceResolver(this.entityClient))
             .dataFetcher("executionRequest",
                 new GetIngestionExecutionRequestResolver(this.entityClient))
+            .dataFetcher("thriftEnum", new AuthenticatedResolver<>(
+                new LoadableTypeResolver<>(thriftEnumType,
+                    (env) -> env.getArgument(URN_FIELD_NAME))))
+        
         );
     }
 
@@ -883,7 +892,6 @@ public class GmsGraphQLEngine {
                                 (env) -> ((InstitutionalMemoryMetadata) env.getSource()).getAuthor().getUrn()))
                 )
             );
-
     }
 
     private void configureGlossaryTermResolvers(final RuntimeWiring.Builder builder) {
@@ -1085,7 +1093,11 @@ public class GmsGraphQLEngine {
             .type("Aspect", typeWiring -> typeWiring.typeResolver(new AspectInterfaceTypeResolver()))
             .type("TimeSeriesAspect", typeWiring -> typeWiring.typeResolver(new TimeSeriesAspectInterfaceTypeResolver()))
             .type("ResultsType", typeWiring -> typeWiring
-                    .typeResolver(new ResultsTypeResolver()));
+                    .typeResolver(new ResultsTypeResolver()))
+            .type("HyperTypeToken", typeWiring -> typeWiring
+                    .typeResolver(new HyperTypeTokenResolver())
+            );
+
     }
 
     /**

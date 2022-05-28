@@ -1,7 +1,3 @@
-namespace java "com.company1"
-namespace * com.company2
-cpp_namespace com.company3
-php_namespace com.company4
 struct PrimitiveTypes {
     1: bool boolValue
     2: byte byteValue
@@ -10,4 +6,4 @@ struct PrimitiveTypes {
     5: i64 i64Value
     6: double doubleValue
     7: string stringValue
-} 
+}

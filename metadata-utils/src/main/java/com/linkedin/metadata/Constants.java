@@ -41,6 +41,7 @@ public class Constants {
   public static final String SECRETS_ENTITY_NAME = "dataHubSecret";
   public static final String EXECUTION_REQUEST_ENTITY_NAME = "dataHubExecutionRequest";
   public static final String NOTEBOOK_ENTITY_NAME = "notebook";
+  public static final String THRIFT_ENUM_ENTITY_NAME = "thriftEnum";
 
 
   /**
@@ -204,6 +205,12 @@ public class Constants {
   public static final String DATA_PROCESS_INSTANCE_PROPERTIES_ASPECT_NAME = "dataProcessInstanceProperties";
   public static final String DATA_PROCESS_INSTANCE_RUN_EVENT_ASPECT_NAME = "dataProcessInstanceRunEvent";
 
+  /**
+   * ThriftEnum
+   */
+  public static final String THRIFT_ENUM_KEY_ASPECT_NAME = "thriftEnumKey";
+  public static final String THRIFT_ENUM_PROPERTIES_ASPECT_NAME = "thriftEnumProperties";
+  
   private Constants() {
   }
 }
