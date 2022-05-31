@@ -2,19 +2,9 @@ import os
 import re
 from dataclasses import dataclass, field, replace
 from functools import lru_cache, reduce
-from typing import (
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import Dict, Generator, Iterable, List, Optional, Tuple, Type, Union, cast
 
-from antlr4 import CommonTokenStream, InputStream
+from antlr4 import CommonTokenStream, InputStream, TerminalNode
 
 from datahub.configuration.common import ConfigModel
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
@@ -28,7 +18,6 @@ from datahub.ingestion.source.thrift.parse_tools import (  # type: ignore
 )
 from datahub.metadata.com.linkedin.pegasus2avro.events.metadata import ChangeType
 from datahub.metadata.com.linkedin.pegasus2avro.schema import (
-    ThriftAnnotation,
     ArrayType,
     BooleanType,
     BytesType,
@@ -42,6 +31,7 @@ from datahub.metadata.com.linkedin.pegasus2avro.schema import (
     SchemaFieldDataType,
     SchemaMetadata,
     StringType,
+    ThriftAnnotation,
     ThriftEnumItem,
     ThriftEnumKey,
     ThriftEnumProperties,
@@ -78,7 +68,7 @@ def split_qualified_name(qualified_name: str) -> Tuple[Optional[str], str]:
     return qualifier, name
 
 
-def get_literal_text(ctx: thriftParser.LITERAL) -> str:
+def get_literal_text(ctx: TerminalNode) -> str:
     literal = ctx.getText()
     m = re.match(r"(\".*\")|(\'.*\')", literal)
     if m is None:
@@ -276,10 +266,10 @@ class GetHeader(thriftVisitor):
 
     def visitNamespace_(self, ctx: thriftParser.Namespace_Context) -> NameResolver:
         func = {
-            thriftParser.StarNamespaceContext: self.visitStarNamespace,
-            thriftParser.ExplicitNamespaceContext: self.visitExplicitNamespace,
-            thriftParser.CppNamespaceContext: self.visitCppNamespace,
-            thriftParser.PhpNamespaceContext: self.visitPhpNamespace,
+            thriftParser.StarNamespaceContext: self.visitStarNamespace,  # type: ignore [dict-item, incompatible type]
+            thriftParser.ExplicitNamespaceContext: self.visitExplicitNamespace,  # type: ignore [dict-item, incompatible type]
+            thriftParser.CppNamespaceContext: self.visitCppNamespace,  # type: ignore [dict-item, incompatible type]
+            thriftParser.PhpNamespaceContext: self.visitPhpNamespace,  # type: ignore [dict-item, incompatible type]
         }.get(type(ctx), None)
         if func is not None:
             return func(ctx)
@@ -662,9 +652,7 @@ class Binder:
     ) -> str:
         return ctx.real_base_type().getText()
 
-    def bind_native_data_type_from_IDENTIFIER(
-        self, ctx: thriftParser.IDENTIFIER
-    ) -> str:
+    def bind_native_data_type_from_IDENTIFIER(self, ctx: TerminalNode) -> str:
         qualified_name = ctx.getText()
         return self.bind_native_data_type_from_qualified_name(qualified_name)
 
@@ -746,7 +734,7 @@ class Binder:
             "string": str,
         }[ctx.real_base_type().getText()]
 
-    def bind_Type_from_IDENTIFIER(self, ctx: thriftParser.IDENTIFIER) -> Type:
+    def bind_Type_from_IDENTIFIER(self, ctx: TerminalNode) -> Type:
         qualified_name = ctx.getText()
         return self.bind_Type_from_qualified_name(qualified_name)
 
@@ -806,14 +794,14 @@ class Binder:
         else:
             raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
-    def bind_value_from_DOUBLE(self, ctx: thriftParser.IDENTIFIER) -> float:
+    def bind_value_from_DOUBLE(self, ctx: TerminalNode) -> float:
         return float(ctx.getText())
 
-    def bind_value_from_LITERAL(self, ctx: thriftParser.LITERAL) -> str:
+    def bind_value_from_LITERAL(self, ctx: TerminalNode) -> str:
         return get_literal_text(ctx)
 
     def bind_value_from_IDENTIFIER(
-        self, ctx: thriftParser.IDENTIFIER, type_: Type
+        self, ctx: TerminalNode, type_: Type
     ) -> Union[int, str, bool, float, None]:
         qualified_name = ctx.getText()
         return self.bind_value_from_qualified_name(qualified_name, type_)
@@ -905,7 +893,7 @@ class Binder:
         yield HyperTypeTextToken(text=ctx.real_base_type().getText())
 
     def bind_HyperType_from_IDENTIFIER(
-        self, ctx: thriftParser.IDENTIFIER
+        self, ctx: TerminalNode
     ) -> Generator[Union[HyperTypeTextToken, HyperTypeUrnToken], None, None]:
         qualified_name = ctx.getText()
         yield from self.bind_HyperType_from_qualified_name(qualified_name)
@@ -995,7 +983,7 @@ class Binder:
             raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
     def bind_SchemaFieldDataType_from_IDENTIFIER(
-        self, ctx: thriftParser.IDENTIFIER
+        self, ctx: TerminalNode
     ) -> SchemaFieldDataType:
         qualified_name = ctx.getText()
         return self.bind_SchemaFieldDataType_from_qualified_name(qualified_name)
@@ -1105,6 +1093,7 @@ def get_binder(filename: str, thrift_paths: Tuple[str, ...]) -> Binder:
     name_resolver = get_name_resolver(filename, thrift_paths)
     return Binder(filename, thrift_paths, name_resolver)
 
+
 @dataclass
 class ThriftReport(SourceReport):
     errors: List[str] = field(default_factory=list)
@@ -1112,6 +1101,7 @@ class ThriftReport(SourceReport):
     def report_workunit(self, wu: WorkUnit) -> None:
         self.workunits_produced += 1
         self.workunit_ids.append(wu.id)
+
 
 @dataclass
 class ThriftSource(Source):
@@ -1135,7 +1125,7 @@ class ThriftSource(Source):
                     filename, thrift_paths or tuple()
                 ).bind_MCPs_from_Document(tree)
             except Exception as e:
-                self.report.errors.append(f"Error: {e}")            
+                self.report.errors.append(f"Error: {e}")
         elif os.path.isdir(filename):
             for f in os.listdir(filename):
                 yield from self.parse(os.path.join(filename, f), thrift_paths)
