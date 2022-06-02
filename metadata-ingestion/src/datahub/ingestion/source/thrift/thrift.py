@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from dataclasses import dataclass, field, replace
 from functools import lru_cache, reduce
 from typing import (
@@ -13,6 +14,7 @@ from typing import (
     Union,
     cast,
     get_args,
+    Set
 )
 
 from antlr4 import CommonTokenStream, InputStream, TerminalNode
@@ -26,6 +28,11 @@ from datahub.ingestion.source.thrift.parse_tools import (  # type: ignore
     thriftLexer,
     thriftParser,
     thriftVisitor,
+)
+from datahub.metadata.com.linkedin.pegasus2avro.common import (
+    AuditStamp,
+    GlossaryTermAssociation,
+    GlossaryTerms,
 )
 from datahub.metadata.com.linkedin.pegasus2avro.events.metadata import ChangeType
 from datahub.metadata.com.linkedin.pegasus2avro.schema import (
@@ -415,10 +422,11 @@ class Binder:
                 filename = self.name_resolver.includes[qualifier]
                 return Redirect(filename, self.thrift_paths, name)
             elif isinstance(self.name_resolver.get(qualifier), ResolvedEnum):
+                resolved_enum=cast(ResolvedEnum,self.name_resolver.get(qualifier))
                 return ResolvedConstValue(
-                    urn=self.name_resolver.get(qualifier).urn,
-                    native_data_type=self.name_resolver.get(qualifier).native_data_type,
-                    namespaces=self.name_resolver.get(qualifier).namespaces,
+                    urn=resolved_enum.urn,
+                    native_data_type=resolved_enum.native_data_type,
+                    namespaces=resolved_enum.namespaces,
                     type_=str,
                     value=qualified_name,
                 )
@@ -491,14 +499,33 @@ class Binder:
             ),
         )
 
+    def get_terms_from_type_annotations(
+        self, ctx: List[thriftParser.Type_annotationContext]
+    ) -> List[str]:
+        for annotation in ctx:
+            key = annotation.IDENTIFIER().getText()
+            if key == "datahub.terms":
+                value = self.bind_annotation_value_from_annotation_value(
+                    annotation.annotation_value()
+                )
+                if isinstance(value, str):
+                    return value.split(",")
+                else:
+                    raise ValueError("terms should be string, not int")
+        return []
+
     def bind_MCPs_from_struct_(
         self, ctx: thriftParser.Struct_Context
     ) -> Generator[MetadataChangeProposalWrapper, None, None]:
+        terms = []
         if ctx.type_annotations():
             annotations = [
                 self.bind_Annotation_from_type_annotation(type_annotation)
                 for type_annotation in ctx.type_annotations().type_annotation()
             ]
+            terms = self.get_terms_from_type_annotations(
+                ctx.type_annotations().type_annotation()
+            )
         else:
             annotations = None
 
@@ -528,15 +555,36 @@ class Binder:
                 ],
             ),
         )
+        if terms and len(terms) > 0:
+            yield MetadataChangeProposalWrapper(
+                entityType="dataset",
+                changeType=ChangeType.UPSERT,
+                aspectName="GlossaryTerms",
+                entityUrn=result.urn,
+                aspect=GlossaryTerms(
+                    # terms=[self.bind_GlossaryTermAssociation_from_annotation(annotation) for annotation in custom_annotations]
+                    terms=[
+                        GlossaryTermAssociation(urn=f"urn:li:glossaryTerm:{term}")
+                        for term in terms
+                    ],
+                    auditStamp=AuditStamp(
+                        time=int(time.time() * 1000), actor="urn:li:corpuser:datahub"
+                    ),
+                ),
+            )
 
     def bind_MCPs_from_union_(
         self, ctx: thriftParser.Union_Context
     ) -> Generator[MetadataChangeProposalWrapper, None, None]:
+        terms = []
         if ctx.type_annotations():
             annotations = [
                 self.bind_Annotation_from_type_annotation(type_annotation)
                 for type_annotation in ctx.type_annotations().type_annotation()
             ]
+            terms = self.get_terms_from_type_annotations(
+                ctx.type_annotations().type_annotation()
+            )
         else:
             annotations = None
 
@@ -566,6 +614,22 @@ class Binder:
                 ],
             ),
         )
+        if terms and len(terms) > 0:
+            yield MetadataChangeProposalWrapper(
+                entityType="dataset",
+                changeType=ChangeType.UPSERT,
+                aspectName="GlossaryTerms",
+                entityUrn=result.urn,
+                aspect=GlossaryTerms(
+                    terms=[
+                        GlossaryTermAssociation(urn=f"urn:li:glossaryTerm:{term}")
+                        for term in terms
+                    ],
+                    auditStamp=AuditStamp(
+                        time=int(time.time() * 1000), actor="urn:li:corpuser:datahub"
+                    ),
+                ),
+            )
 
     def bind_MCPs_from_enum_rule(
         self, ctx: thriftParser.Enum_ruleContext
@@ -646,10 +710,24 @@ class Binder:
     def bind_SchemaField_from_field(
         self, ctx: thriftParser.FieldContext
     ) -> SchemaField:
+        terms = []
+        if ctx.type_annotations():
+            terms = self.get_terms_from_type_annotations(
+                ctx.type_annotations().type_annotation()
+            )
         return SchemaField(
             fieldPath=ctx.IDENTIFIER().getText(),
             type=self.bind_SchemaFieldDataType_from_field_type(ctx.field_type()),
             nativeDataType=self.bind_native_data_type_from_field_type(ctx.field_type()),
+            glossaryTerms=GlossaryTerms(
+                terms=[
+                    GlossaryTermAssociation(urn=f"urn:li:glossaryTerm:{term}")
+                    for term in terms
+                ],
+                auditStamp=AuditStamp(
+                    time=int(time.time() * 1000), actor="urn:li:corpuser:datahub"
+                ),
+            ),
         )
 
     def bind_native_data_type_from_field_type(
@@ -730,7 +808,7 @@ class Binder:
 
     def bind_Type_from_field_type(
         self, ctx: thriftParser.Field_typeContext
-    ) -> Optional[Type]:
+    ) -> Type:
         if ctx.base_type():
             return self.bind_Type_from_base_type(ctx.base_type())
         elif ctx.IDENTIFIER():
@@ -776,21 +854,21 @@ class Binder:
 
     def bind_Type_from_UnresolvedFieldType(
         self, result: UnresolvedFieldType
-    ) -> Optional[Type]:
+    ) -> Type:
         return self.bind_Type_from_field_type(result.ctx)
 
     def bind_Type_from_container_type(
         self, ctx: thriftParser.Container_typeContext
-    ) -> Type:
+    ) -> Type: 
         if ctx.list_type():
-            return List[self.bind_Type_from_field_type(ctx.list_type().field_type())]
+            return List[self.bind_Type_from_field_type(ctx.list_type().field_type())] # type: ignore
         elif ctx.map_type():
-            return dict[
+            return Dict[ # type: ignore
                 self.bind_Type_from_field_type(ctx.map_type().field_type()[0]),
                 self.bind_Type_from_field_type(ctx.map_type().field_type()[1]),
             ]
         elif ctx.set_type():
-            return set[self.bind_Type_from_field_type(ctx.set_type().field_type())]
+            return Set[self.bind_Type_from_field_type(ctx.set_type().field_type())] # type: ignore
         else:
             raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
@@ -853,7 +931,7 @@ class Binder:
 
     def bind_value_from_IDENTIFIER(
         self, ctx: TerminalNode, type_: Type
-    ) -> Union[str, None]:
+    ) -> Union[str, float, None]:
         qualified_name = ctx.getText()
         return self.bind_value_from_qualified_name(qualified_name, type_)
 

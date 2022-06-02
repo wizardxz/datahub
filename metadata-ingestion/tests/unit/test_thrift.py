@@ -519,7 +519,7 @@ def test_field_metadata(mcp_objects: List[dict]) -> None:
 @gen_thrift_mcps_and_verify(
     "./tests/unit/thrift_files/const_composite_types.thrift",
 )
-def test_composite_types(mcp_objects: List[dict]) -> None:
+def test_const_composite_types(mcp_objects: List[dict]) -> None:
     assert len(mcp_objects) == 3
     obj = mcp_objects[2]
     aspect = json.loads(obj["aspect"]["value"])
@@ -741,3 +741,136 @@ def test_composite_types(mcp_objects: List[dict]) -> None:
         assert tf["hyperType"] == hyper_type
         if "default" in tf.keys():
             assert tf["default"] == default
+
+
+@gen_thrift_mcps_and_verify(
+    "./tests/unit/thrift_files/annotations.thrift",
+)
+def test_annotations(mcp_objects: List[dict]) -> None:
+    assert len(mcp_objects) == 4
+    obj = mcp_objects[0]
+    aspect = json.loads(obj["aspect"]["value"])
+    general_annotations = aspect["platformSchema"]["com.linkedin.schema.ThriftSchema"][
+        "annotations"
+    ]
+    thrift_schema = aspect["platformSchema"]["com.linkedin.schema.ThriftSchema"]
+    fields = aspect["fields"]
+    tfs = thrift_schema["fields"]
+    assert len(fields) == len(tfs) == 1
+    expected = [  # type: ignore [var-annotated]
+        (
+            1,
+            "bar",
+            {"type": {"com.linkedin.schema.NumberType": {}}},
+            "i64",
+            [{"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}}],
+            {"float": 1},
+            [
+                {"key": "datahub.terms", "value": {"string": "term1,term2"}},
+                {"key": "size", "value": {"int": 12}},
+            ],
+            [
+                {"urn": "urn:li:glossaryTerm:term1"},
+                {"urn": "urn:li:glossaryTerm:term2"},
+            ],
+        ),
+    ]
+    expect_annotations = [
+        {"key": "datahub.terms", "value": {"string": "term3,term4"}},
+        {"key": "case", "value": {"string": "case1"}},
+    ]
+    for field, tf, exp in zip(
+        fields,
+        tfs,
+        expected,
+    ):
+        (
+            index,
+            name,
+            type_,
+            native_type,
+            hyper_type,
+            default,
+            annotations,
+            terms,
+        ) = exp
+
+        assert field["fieldPath"] == tf["name"] == name
+        assert field["type"] == type_
+        assert field["nativeDataType"] == native_type
+        assert tf["index"] == index
+        assert tf["hyperType"] == hyper_type
+        assert tf["default"] == default
+        assert tf.get("annotations", []) == annotations
+        assert field["glossaryTerms"]["terms"] == terms
+    assert expect_annotations == general_annotations
+
+    obj = mcp_objects[2]
+    aspect = json.loads(obj["aspect"]["value"])
+    general_annotations = aspect["platformSchema"]["com.linkedin.schema.ThriftSchema"][
+        "annotations"
+    ]
+    thrift_schema = aspect["platformSchema"]["com.linkedin.schema.ThriftSchema"]
+    fields = aspect["fields"]
+    tfs = thrift_schema["fields"]
+    assert len(fields) == len(tfs) == 1
+    expected = [  # type: ignore [var-annotated]
+        (
+            1,
+            "bar1",
+            {"type": {"com.linkedin.schema.NumberType": {}}},
+            "i64",
+            [{"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}}],
+            {"float": 2},
+            [
+                {"key": "datahub.terms", "value": {"string": "term5,term6"}},
+                {"key": "size", "value": {"int": 11}},
+            ],
+            [
+                {"urn": "urn:li:glossaryTerm:term5"},
+                {"urn": "urn:li:glossaryTerm:term6"},
+            ],
+        ),
+    ]
+    expect_annotations = [
+        {"key": "datahub.terms", "value": {"string": "term7,term8"}},
+        {"key": "case", "value": {"string": "case2"}},
+    ]
+    for field, tf, exp in zip(
+        fields,
+        tfs,
+        expected,
+    ):
+        (
+            index,
+            name,
+            type_,
+            native_type,
+            hyper_type,
+            default,
+            annotations,
+            terms,
+        ) = exp
+        assert field["fieldPath"] == tf["name"] == name
+        assert field["type"] == type_
+        assert field["nativeDataType"] == native_type
+        assert tf["index"] == index
+        assert tf["hyperType"] == hyper_type
+        assert tf["default"] == default
+        assert tf.get("annotations", []) == annotations
+        assert field["glossaryTerms"]["terms"] == terms
+    assert expect_annotations == general_annotations
+
+    obj = mcp_objects[1]
+    aspect = json.loads(obj["aspect"]["value"])
+    assert aspect["terms"] == [
+        {"urn": "urn:li:glossaryTerm:term3"},
+        {"urn": "urn:li:glossaryTerm:term4"},
+    ]
+
+    obj = mcp_objects[3]
+    aspect = json.loads(obj["aspect"]["value"])
+    assert aspect["terms"] == [
+        {"urn": "urn:li:glossaryTerm:term7"},
+        {"urn": "urn:li:glossaryTerm:term8"},
+    ]
