@@ -2,7 +2,18 @@ import os
 import re
 from dataclasses import dataclass, field, replace
 from functools import lru_cache, reduce
-from typing import Dict, Generator, Iterable, List, Optional, Tuple, Type, Union, cast
+from typing import (
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+    get_args,
+)
 
 from antlr4 import CommonTokenStream, InputStream, TerminalNode
 
@@ -404,7 +415,13 @@ class Binder:
                 filename = self.name_resolver.includes[qualifier]
                 return Redirect(filename, self.thrift_paths, name)
             elif isinstance(self.name_resolver.get(qualifier), ResolvedEnum):
-                return None  # TODO 1: order = SortOrder.DESC
+                return ResolvedConstValue(
+                    urn=self.name_resolver.get(qualifier).urn,
+                    native_data_type=self.name_resolver.get(qualifier).native_data_type,
+                    namespaces=self.name_resolver.get(qualifier).namespaces,
+                    type_=str,
+                    value=qualified_name,
+                )
             else:
                 raise RuntimeError(
                     f"The qualifier of {qualified_name} is not included."
@@ -743,8 +760,8 @@ class Binder:
 
         func = {
             ResolvedEnum: lambda _: int,
-            ResolvedUnion: lambda _: None,  # TODO 29: Container container = { "mesos": {} }
-            ResolvedStruct: lambda _: None,  # TODO 4: optional AdditionalParams additionalParams = {};
+            ResolvedUnion: lambda _: Union,
+            ResolvedStruct: lambda _: Tuple,
             Redirect: self.bind_Type_from_Redirect,
             UnresolvedFieldType: self.bind_Type_from_UnresolvedFieldType,
         }.get(type(result))
@@ -766,18 +783,25 @@ class Binder:
         self, ctx: thriftParser.Container_typeContext
     ) -> Type:
         if ctx.list_type():
-            return list
+            return List[self.bind_Type_from_field_type(ctx.list_type().field_type())]
         elif ctx.map_type():
-            return dict
+            return dict[
+                self.bind_Type_from_field_type(ctx.map_type().field_type()[0]),
+                self.bind_Type_from_field_type(ctx.map_type().field_type()[1]),
+            ]
         elif ctx.set_type():
-            return set
+            return set[self.bind_Type_from_field_type(ctx.set_type().field_type())]
         else:
             raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
     def bind_value_from_const_value(
         self, ctx: thriftParser.Const_valueContext, type_: Type
     ) -> Union[int, str, bool, float, None]:
-        if ctx.integer() and type_ in {int, bool, float}:
+        if type_ == Tuple:
+            return ctx.getText()
+        elif type_ == Union:
+            return ctx.getText()
+        elif ctx.integer() and type_ in {int, bool, float}:
             return self.bind_value_from_integer(ctx.integer(), type_)
         elif ctx.DOUBLE() and type_ == float:
             return self.bind_value_from_DOUBLE(ctx.DOUBLE())
@@ -786,13 +810,40 @@ class Binder:
         elif ctx.IDENTIFIER():
             return self.bind_value_from_IDENTIFIER(ctx.IDENTIFIER(), type_)
         elif ctx.const_list():
-            # TODO 1: list<i64> my_list = [1,2,3]
-            return None
+            return self.bind_value_from_const_list(ctx.const_list(), type_)
         elif ctx.const_map():
-            # TODO
-            return None
+            return self.bind_value_from_const_map(ctx.const_map(), type_)
         else:
             raise NotImplementedError(f"not support {ctx.getText()} yet.")
+
+    def bind_value_from_const_list(
+        self, ctx: thriftParser.Const_listContext, type_: Type
+    ) -> str:
+        text_ = "["
+        for i in ctx.const_value():
+            sub_type_ = type_.__args__[0]
+            text_ += str(self.bind_value_from_const_value(i, sub_type_))
+            text_ += ", "
+        text_ = text_[:-2]
+        text_ += "]"
+        return text_
+
+    def bind_value_from_const_map(
+        self, ctx: thriftParser.Const_mapContext, type_: Type
+    ) -> str:
+        text_ = "{"
+        for entry in ctx.const_map_entry():
+            key_ = entry.const_value()[0]
+            value_ = entry.const_value()[1]
+            key_type_ = type_.__args__[0]
+            value_type_ = type_.__args__[1]
+            text_ += str(self.bind_value_from_const_value(key_, key_type_))
+            text_ += ":"
+            text_ += str(self.bind_value_from_const_value(value_, value_type_))
+            text_ += ", "
+        text_ = text_[:-2]
+        text_ += "}"
+        return text_
 
     def bind_value_from_DOUBLE(self, ctx: TerminalNode) -> float:
         return float(ctx.getText())
@@ -802,7 +853,7 @@ class Binder:
 
     def bind_value_from_IDENTIFIER(
         self, ctx: TerminalNode, type_: Type
-    ) -> Union[int, str, bool, float, None]:
+    ) -> Union[str, None]:
         qualified_name = ctx.getText()
         return self.bind_value_from_qualified_name(qualified_name, type_)
 
@@ -856,7 +907,6 @@ class Binder:
             annotations = None
         if ctx.const_value():
             type_ = self.bind_Type_from_field_type(ctx.field_type())
-            # TODO type_ could be union, not implemented yet.
             if type_ is not None:
                 default = self.bind_value_from_const_value(ctx.const_value(), type_)
             else:

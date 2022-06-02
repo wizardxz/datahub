@@ -514,3 +514,230 @@ def test_field_metadata(mcp_objects: List[dict]) -> None:
         assert tf["hyperType"] == hyper_type
         assert tf["default"] == default
         assert tf.get("annotations", []) == annotations
+
+
+@gen_thrift_mcps_and_verify(
+    "./tests/unit/thrift_files/const_composite_types.thrift",
+)
+def test_composite_types(mcp_objects: List[dict]) -> None:
+    assert len(mcp_objects) == 3
+    obj = mcp_objects[2]
+    aspect = json.loads(obj["aspect"]["value"])
+    thrift_schema = aspect["platformSchema"]["com.linkedin.schema.ThriftSchema"]
+    fields = aspect["fields"]
+    tfs = thrift_schema["fields"]
+    assert len(fields) == len(tfs) == 12
+    expected = [
+        (
+            1,
+            "color",
+            {"type": {"com.linkedin.schema.EnumType": {}}},
+            "Color",
+            [
+                {
+                    "com.linkedin.schema.HyperTypeUrnToken": {
+                        "text": "Color",
+                        "urn": "urn:li:thriftEnum:com.company.Color",
+                    }
+                }
+            ],
+            {"string": "Color.RED"},
+        ),
+        (
+            2,
+            "l2",
+            {"type": {"com.linkedin.schema.ArrayType": {"nestedType": ["list<i64>"]}}},
+            "list<list<i64>>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "list<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "list<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            {"string": "[[1, 2, 3], [1, 2, 3], [1, 2, 3]]"},
+        ),
+        (
+            3,
+            "s1",
+            {"type": {"com.linkedin.schema.ArrayType": {"nestedType": ["i64"]}}},
+            "set<i64>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "set<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            None,
+        ),
+        (
+            4,
+            "m1",
+            {
+                "type": {
+                    "com.linkedin.schema.MapType": {
+                        "keyType": "string",
+                        "valueType": "i64",
+                    }
+                }
+            },
+            "map<string,i64>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "map<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "string"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ","}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            {"string": "{a:1, b:2}"},
+        ),
+        (
+            5,
+            "m2",
+            {
+                "type": {
+                    "com.linkedin.schema.MapType": {
+                        "keyType": "string",
+                        "valueType": "set<i64>",
+                    }
+                }
+            },
+            "map<string,set<i64>>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "map<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "string"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ","}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "set<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            None,
+        ),
+        (
+            6,
+            "l3",
+            {"type": {"com.linkedin.schema.ArrayType": {"nestedType": ["TweetType"]}}},
+            "list<TweetType>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "list<"}},
+                {
+                    "com.linkedin.schema.HyperTypeUrnToken": {
+                        "text": "TweetType",
+                        "urn": "urn:li:thriftEnum:com.company.TweetType",
+                    }
+                },
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            None,
+        ),
+        (
+            7,
+            "l1",
+            {"type": {"com.linkedin.schema.ArrayType": {"nestedType": ["i64"]}}},
+            "list<i64>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "list<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            {"string": "[1, 2, 3]"},
+        ),
+        (
+            8,
+            "s2",
+            {"type": {"com.linkedin.schema.ArrayType": {"nestedType": ["S1"]}}},
+            "set<S1>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "set<"}},
+                {
+                    "com.linkedin.schema.HyperTypeUrnToken": {
+                        "text": "S1",
+                        "urn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.S1,PROD)",
+                    }
+                },
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            None,
+        ),
+        (
+            9,
+            "m3",
+            {
+                "type": {
+                    "com.linkedin.schema.MapType": {
+                        "keyType": "i64",
+                        "valueType": "list<i64>",
+                    }
+                }
+            },
+            "map<i64,list<i64>>",
+            [
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "map<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ","}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "list<"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": "i64"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+                {"com.linkedin.schema.HyperTypeTextToken": {"text": ">"}},
+            ],
+            {"string": "{1:[11, 111], 2:[22, 222]}"},
+        ),
+        (
+            10,
+            "color2",
+            {"type": {"com.linkedin.schema.EnumType": {}}},
+            "TweetType",
+            [
+                {
+                    "com.linkedin.schema.HyperTypeUrnToken": {
+                        "text": "TweetType",
+                        "urn": "urn:li:thriftEnum:com.company.TweetType",
+                    }
+                }
+            ],
+            {"string": "TweetType.RETWEET"},
+        ),
+        (
+            11,
+            "s3",
+            {"type": {"com.linkedin.schema.RecordType": {}}},
+            "S1",
+            [
+                {
+                    "com.linkedin.schema.HyperTypeUrnToken": {
+                        "text": "S1",
+                        "urn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.S1,PROD)",
+                    }
+                }
+            ],
+            {"string": "{'S3':'structValue'}"},
+        ),
+        (
+            12,
+            "U2",
+            {"type": {"com.linkedin.schema.UnionType": {"nestedTypes": ["E1", "S2"]}}},
+            "U1",
+            [
+                {
+                    "com.linkedin.schema.HyperTypeUrnToken": {
+                        "text": "U1",
+                        "urn": "urn:li:dataset:(urn:li:dataPlatform:thrift,com.company.U1,PROD)",
+                    }
+                }
+            ],
+            {"string": '{"E1":"enumValue","S2":"structValue"}'},
+        ),
+    ]
+    for field, tf, exp in zip(
+        fields,
+        tfs,
+        expected,
+    ):
+        index, name, type_, native_type, hyper_type, default = exp
+        assert field["fieldPath"] == tf["name"] == name
+        assert field["type"] == type_
+        assert field["nativeDataType"] == native_type
+        assert tf["index"] == index
+        assert tf["hyperType"] == hyper_type
+        if "default" in tf.keys():
+            assert tf["default"] == default
