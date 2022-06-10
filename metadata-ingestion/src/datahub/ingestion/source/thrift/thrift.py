@@ -8,13 +8,13 @@ from typing import (
     Generator,
     Iterable,
     List,
+    NewType,
     Optional,
+    Set,
     Tuple,
     Type,
     Union,
     cast,
-    get_args,
-    Set
 )
 
 from antlr4 import CommonTokenStream, InputStream, TerminalNode
@@ -59,6 +59,18 @@ from datahub.metadata.com.linkedin.pegasus2avro.schema import (
 )
 
 
+def get_list_item_type(type_: Type) -> Type:
+    return type_.__args__[0]
+
+
+def get_map_key_type(type_: Type) -> Type:
+    return type_.__args__[0]
+
+
+def get_map_value_type(type_: Type) -> Type:
+    return type_.__args__[1]
+
+
 def get_enum_urn(java_namespace: Optional[str], name: str) -> str:
     return f"urn:li:thriftEnum:{get_qualified_name(name, java_namespace)}"
 
@@ -97,6 +109,7 @@ def get_literal_text(ctx: TerminalNode) -> str:
 class ThriftSourceConfig(ConfigModel):
     filename: str
     thrift_paths: Optional[Tuple[str, ...]] = None
+    explicit: bool = False
 
 
 @lru_cache()
@@ -114,69 +127,87 @@ def parse(filename: str) -> thriftParser.DocumentContext:
 
 
 @dataclass(frozen=True)
-class ResolveResult:
+class TypeResolveResult:
     pass
 
 
 @dataclass(frozen=True)
-class Resolved(ResolveResult):
+class TypeResolved(TypeResolveResult):
     urn: str
     native_data_type: str
     namespaces: Dict[str, str]
 
 
 @dataclass(frozen=True)
-class ResolvedEnum(Resolved):
+class ResolvedEnum(TypeResolved):
     pass
 
 
 @dataclass(frozen=True)
-class ResolvedStruct(Resolved):
+class ResolvedStruct(TypeResolved):
     pass
 
 
 @dataclass(frozen=True)
-class ResolvedUnion(Resolved):
+class ResolvedUnion(TypeResolved):
     subtypes: List[str]
 
 
 @dataclass(frozen=True)
-class ResolvedException(Resolved):
+class ResolvedException(TypeResolved):
     pass
 
 
 @dataclass(frozen=True)
-class ResolvedConstValue(Resolved):
-    type_: Type
-    value: Union[int, str, bool, float, None]
-
-
-@dataclass(frozen=True)
-class Unresolved(ResolveResult):
+class TypeUnresolved(TypeResolveResult):
     pass
 
 
 @dataclass(frozen=True)
-class Redirect(Unresolved):
+class RedirectForType(TypeUnresolved):
     filename: str
     thrift_path: Optional[Tuple[str, ...]]
     qualified_name: str
 
 
 @dataclass(frozen=True)
-class UnresolvedFieldType(Unresolved):
+class ValueResolveResult:
+    pass
+
+
+@dataclass(frozen=True)
+class UnresolvedFieldType(TypeUnresolved):
     ctx: thriftParser.Field_typeContext
 
 
 @dataclass(frozen=True)
-class UnresolvedConstValue(Unresolved):
+class ValueUnresolved(ValueResolveResult):
+    pass
+
+
+@dataclass(frozen=True)
+class RedirectForValue(ValueUnresolved):
+    filename: str
+    thrift_path: Optional[Tuple[str, ...]]
+    qualified_name: str
+
+
+@dataclass(frozen=True)
+class UnresolvedConstValue(ValueUnresolved):
     ctx: thriftParser.Const_valueContext
+
+
+@dataclass(frozen=True)
+class ValueResolved(ValueResolveResult):
+    type_: Type
+    value: Union[int, str, bool, float]
 
 
 @dataclass(frozen=True)
 class NameResolver:
     namespaces: Dict[str, str] = field(default_factory=dict)
-    data: Dict[str, ResolveResult] = field(default_factory=dict)
+    type_data: Dict[str, TypeResolveResult] = field(default_factory=dict)
+    value_data: Dict[str, ValueResolveResult] = field(default_factory=dict)
     includes: Dict[str, str] = field(default_factory=dict)
 
     @property
@@ -192,15 +223,16 @@ class NameResolver:
         return replace(
             self,
             namespaces={**self.namespaces, **other.namespaces},
-            data={**self.data, **other.data},
+            type_data={**self.type_data, **other.type_data},
+            value_data={**self.value_data, **other.value_data},
             includes={**self.includes, **other.includes},
         )
 
     def add_enum(self, name: str) -> "NameResolver":
         return replace(
             self,
-            data={
-                **self.data,
+            type_data={
+                **self.type_data,
                 name: ResolvedEnum(
                     get_enum_urn(self.java_namespace, name), name, self.namespaces
                 ),
@@ -210,8 +242,8 @@ class NameResolver:
     def add_struct(self, name: str) -> "NameResolver":
         return replace(
             self,
-            data={
-                **self.data,
+            type_data={
+                **self.type_data,
                 name: ResolvedStruct(
                     get_dataset_urn(self.java_namespace, name), name, self.namespaces
                 ),
@@ -221,8 +253,8 @@ class NameResolver:
     def add_union(self, name: str, subtypes: List[str]) -> "NameResolver":
         return replace(
             self,
-            data={
-                **self.data,
+            type_data={
+                **self.type_data,
                 name: ResolvedUnion(
                     get_dataset_urn(self.java_namespace, name),
                     name,
@@ -239,7 +271,7 @@ class NameResolver:
     ) -> "NameResolver":
         return replace(
             self,
-            data={**self.data, name: UnresolvedFieldType(ctx)},
+            type_data={**self.type_data, name: UnresolvedFieldType(ctx)},
         )
 
     def add_const_value(
@@ -249,7 +281,7 @@ class NameResolver:
     ) -> "NameResolver":
         return replace(
             self,
-            data={**self.data, name: UnresolvedConstValue(ctx)},
+            value_data={**self.value_data, name: UnresolvedConstValue(ctx)},
         )
 
     def add_include(self, qualifier: str, filename: str) -> "NameResolver":
@@ -258,8 +290,11 @@ class NameResolver:
     def add_namespace(self, language: str, namespace: str) -> "NameResolver":
         return replace(self, namespaces={**self.namespaces, language: namespace})
 
-    def get(self, name: str) -> Optional[ResolveResult]:
-        return self.data.get(name)
+    def get_type(self, name: str) -> Optional[TypeResolveResult]:
+        return self.type_data.get(name)
+
+    def get_value(self, name: str) -> Optional[ValueResolveResult]:
+        return self.value_data.get(name)
 
 
 @dataclass(frozen=True)
@@ -407,26 +442,41 @@ def get_name_resolver(filename: str, thrift_paths: Tuple[str, ...]) -> NameResol
     return GetNameResolver(header).visit(tree)
 
 
+SkipValidationType = NewType("SkipValidationType", str)
+
+
 @dataclass(frozen=True)
 class Binder:
     filename: str
     thrift_paths: Tuple[str, ...]
     name_resolver: NameResolver
 
-    def resolve(self, qualified_name: str) -> Optional[ResolveResult]:
+    def resolve_type(self, qualified_name: str) -> Optional[TypeResolveResult]:
         qualifier, name = split_qualified_name(qualified_name)
         if qualifier is None:
-            return self.name_resolver.get(name)
+            return self.name_resolver.get_type(name)
         else:
             if qualifier in self.name_resolver.includes:
                 filename = self.name_resolver.includes[qualifier]
-                return Redirect(filename, self.thrift_paths, name)
-            elif isinstance(self.name_resolver.get(qualifier), ResolvedEnum):
-                resolved_enum=cast(ResolvedEnum,self.name_resolver.get(qualifier))
-                return ResolvedConstValue(
-                    urn=resolved_enum.urn,
-                    native_data_type=resolved_enum.native_data_type,
-                    namespaces=resolved_enum.namespaces,
+                return RedirectForType(filename, self.thrift_paths, name)
+            else:
+                raise RuntimeError(
+                    f"The qualifier of {qualified_name} is not included."
+                )
+
+    def resolve_value(self, qualified_name: str) -> Optional[ValueResolveResult]:
+        qualifier, name = split_qualified_name(qualified_name)
+        if qualifier is None:
+            return self.name_resolver.get_value(name)
+        else:
+            if qualifier in self.name_resolver.includes:
+                filename = self.name_resolver.includes[qualifier]
+                return RedirectForValue(filename, self.thrift_paths, name)
+            elif isinstance(self.name_resolver.get_type(qualifier), ResolvedEnum):
+                resolved_enum = cast(
+                    ResolvedEnum, self.name_resolver.get_type(qualifier)
+                )
+                return ValueResolved(
                     type_=str,
                     value=qualified_name,
                 )
@@ -473,7 +523,7 @@ class Binder:
             annotations = None
 
         name = ctx.IDENTIFIER().getText()
-        result = cast(Resolved, self.resolve(name))
+        result = cast(TypeResolved, self.resolve_type(name))
         yield MetadataChangeProposalWrapper(
             entityType="dataset",
             changeType=ChangeType.UPSERT,
@@ -499,38 +549,60 @@ class Binder:
             ),
         )
 
-    def get_terms_from_type_annotations(
-        self, ctx: List[thriftParser.Type_annotationContext]
-    ) -> List[str]:
-        for annotation in ctx:
-            key = annotation.IDENTIFIER().getText()
-            if key == "datahub.terms":
-                value = self.bind_annotation_value_from_annotation_value(
-                    annotation.annotation_value()
-                )
-                if isinstance(value, str):
-                    return value.split(",")
-                else:
-                    raise ValueError("terms should be string, not int")
-        return []
+    def bind_MCPs_from_type_annotations(
+        self, ctx: Optional[thriftParser.Type_annotationsContext], urn: str
+    ) -> Generator[MetadataChangeProposalWrapper, None, None]:
+        if ctx is not None:
+            for annotation in ctx.type_annotation():
+                mcp = self.bind_MCP_from_annotation(annotation, urn)
+                if mcp is not None:
+                    yield mcp
+
+    def bind_MCP_from_annotation(
+        self, ctx: thriftParser.Type_annotationContext, urn: str
+    ) -> Optional[MetadataChangeProposalWrapper]:
+        key = ctx.IDENTIFIER().getText()
+        if key == "datahub.terms":
+
+            return MetadataChangeProposalWrapper(
+                entityType="dataset",
+                changeType=ChangeType.UPSERT,
+                aspectName="glossaryTerms",
+                entityUrn=urn,
+                aspect=self.bind_GlossaryTerms_from_annotation_value(
+                    ctx.annotation_value()
+                ),
+            )
+        return None
+
+    def bind_GlossaryTerms_from_annotation_value(
+        self, ctx: thriftParser.Annotation_valueContext
+    ) -> GlossaryTerms:
+
+        terms = get_literal_text(ctx.LITERAL()).split(",")
+        return GlossaryTerms(
+            terms=[
+                GlossaryTermAssociation(urn=f"urn:li:glossaryTerm:{term.strip()}")
+                for term in terms
+            ],
+            auditStamp=AuditStamp(
+                time=int(time.time() * 1000), actor="urn:li:corpuser:datahub"
+            ),
+        )
 
     def bind_MCPs_from_struct_(
         self, ctx: thriftParser.Struct_Context
     ) -> Generator[MetadataChangeProposalWrapper, None, None]:
-        terms = []
         if ctx.type_annotations():
             annotations = [
                 self.bind_Annotation_from_type_annotation(type_annotation)
                 for type_annotation in ctx.type_annotations().type_annotation()
             ]
-            terms = self.get_terms_from_type_annotations(
-                ctx.type_annotations().type_annotation()
-            )
         else:
             annotations = None
 
         name = ctx.IDENTIFIER().getText()
-        result = cast(Resolved, self.resolve(name))
+        result = cast(TypeResolved, self.resolve_type(name))
         yield MetadataChangeProposalWrapper(
             entityType="dataset",
             changeType=ChangeType.UPSERT,
@@ -555,41 +627,23 @@ class Binder:
                 ],
             ),
         )
-        if terms and len(terms) > 0:
-            yield MetadataChangeProposalWrapper(
-                entityType="dataset",
-                changeType=ChangeType.UPSERT,
-                aspectName="GlossaryTerms",
-                entityUrn=result.urn,
-                aspect=GlossaryTerms(
-                    # terms=[self.bind_GlossaryTermAssociation_from_annotation(annotation) for annotation in custom_annotations]
-                    terms=[
-                        GlossaryTermAssociation(urn=f"urn:li:glossaryTerm:{term}")
-                        for term in terms
-                    ],
-                    auditStamp=AuditStamp(
-                        time=int(time.time() * 1000), actor="urn:li:corpuser:datahub"
-                    ),
-                ),
-            )
+        yield from self.bind_MCPs_from_type_annotations(
+            ctx.type_annotations(), result.urn
+        )
 
     def bind_MCPs_from_union_(
         self, ctx: thriftParser.Union_Context
     ) -> Generator[MetadataChangeProposalWrapper, None, None]:
-        terms = []
         if ctx.type_annotations():
             annotations = [
                 self.bind_Annotation_from_type_annotation(type_annotation)
                 for type_annotation in ctx.type_annotations().type_annotation()
             ]
-            terms = self.get_terms_from_type_annotations(
-                ctx.type_annotations().type_annotation()
-            )
         else:
             annotations = None
 
         name = ctx.IDENTIFIER().getText()
-        result = cast(Resolved, self.resolve(name))
+        result = cast(TypeResolved, self.resolve_type(name))
         yield MetadataChangeProposalWrapper(
             entityType="dataset",
             changeType=ChangeType.UPSERT,
@@ -614,22 +668,9 @@ class Binder:
                 ],
             ),
         )
-        if terms and len(terms) > 0:
-            yield MetadataChangeProposalWrapper(
-                entityType="dataset",
-                changeType=ChangeType.UPSERT,
-                aspectName="GlossaryTerms",
-                entityUrn=result.urn,
-                aspect=GlossaryTerms(
-                    terms=[
-                        GlossaryTermAssociation(urn=f"urn:li:glossaryTerm:{term}")
-                        for term in terms
-                    ],
-                    auditStamp=AuditStamp(
-                        time=int(time.time() * 1000), actor="urn:li:corpuser:datahub"
-                    ),
-                ),
-            )
+        yield from self.bind_MCPs_from_type_annotations(
+            ctx.type_annotations(), result.urn
+        )
 
     def bind_MCPs_from_enum_rule(
         self, ctx: thriftParser.Enum_ruleContext
@@ -643,7 +684,7 @@ class Binder:
             annotations = None
 
         name = ctx.IDENTIFIER().getText()
-        result = cast(Resolved, self.resolve(name))
+        result = cast(TypeResolved, self.resolve_type(name))
         yield MetadataChangeProposalWrapper(
             entityType="thriftEnum",
             changeType=ChangeType.UPSERT,
@@ -710,25 +751,29 @@ class Binder:
     def bind_SchemaField_from_field(
         self, ctx: thriftParser.FieldContext
     ) -> SchemaField:
-        terms = []
-        if ctx.type_annotations():
-            terms = self.get_terms_from_type_annotations(
-                ctx.type_annotations().type_annotation()
-            )
         return SchemaField(
             fieldPath=ctx.IDENTIFIER().getText(),
             type=self.bind_SchemaFieldDataType_from_field_type(ctx.field_type()),
             nativeDataType=self.bind_native_data_type_from_field_type(ctx.field_type()),
-            glossaryTerms=GlossaryTerms(
-                terms=[
-                    GlossaryTermAssociation(urn=f"urn:li:glossaryTerm:{term}")
-                    for term in terms
-                ],
-                auditStamp=AuditStamp(
-                    time=int(time.time() * 1000), actor="urn:li:corpuser:datahub"
-                ),
+            glossaryTerms=self.bind_GlossaryTerms_from_annotations(
+                ctx.type_annotations()
             ),
         )
+
+    def bind_GlossaryTerms_from_annotations(
+        self, ctx: thriftParser.Type_annotationsContext
+    ) -> Optional[GlossaryTerms]:
+        if ctx is None:
+            return None
+        else:
+            for annotation in ctx.type_annotation():
+
+                if annotation.IDENTIFIER().getText() == "datahub.terms":
+
+                    return self.bind_GlossaryTerms_from_annotation_value(
+                        annotation.annotation_value()
+                    )
+            return None
 
     def bind_native_data_type_from_field_type(
         self, ctx: thriftParser.Field_typeContext
@@ -752,14 +797,14 @@ class Binder:
         return self.bind_native_data_type_from_qualified_name(qualified_name)
 
     def bind_native_data_type_from_qualified_name(self, qualified_name: str) -> str:
-        result = self.resolve(qualified_name)
+        result = self.resolve_type(qualified_name)
 
         func = {
             ResolvedEnum: self.bind_native_data_type_from_Resolved,
             ResolvedStruct: self.bind_native_data_type_from_Resolved,
             ResolvedUnion: self.bind_native_data_type_from_Resolved,
             ResolvedException: self.bind_native_data_type_from_Resolved,
-            Redirect: self.bind_native_data_type_from_Redirect,
+            RedirectForType: self.bind_native_data_type_from_Redirect,
             UnresolvedFieldType: self.bind_native_data_type_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
@@ -767,10 +812,10 @@ class Binder:
 
         return func(result)  # type: ignore [operator, Cannot call function of unknown type]
 
-    def bind_native_data_type_from_Resolved(self, result: Resolved) -> str:
+    def bind_native_data_type_from_Resolved(self, result: TypeResolved) -> str:
         return result.native_data_type
 
-    def bind_native_data_type_from_Redirect(self, result: Redirect) -> str:  # type: ignore [return, Missing return statement]
+    def bind_native_data_type_from_Redirect(self, result: RedirectForType) -> str:  # type: ignore [return, Missing return statement]
         binder = get_binder(result.filename, self.thrift_paths)
         return binder.bind_native_data_type_from_qualified_name(result.qualified_name)
 
@@ -806,9 +851,7 @@ class Binder:
     ) -> str:
         return f"map<{self.bind_native_data_type_from_field_type(ctx.field_type()[0])},{self.bind_native_data_type_from_field_type(ctx.field_type()[1])}>"
 
-    def bind_Type_from_field_type(
-        self, ctx: thriftParser.Field_typeContext
-    ) -> Type:
+    def bind_Type_from_field_type(self, ctx: thriftParser.Field_typeContext) -> Type:
         if ctx.base_type():
             return self.bind_Type_from_base_type(ctx.base_type())
         elif ctx.IDENTIFIER():
@@ -834,50 +877,46 @@ class Binder:
         return self.bind_Type_from_qualified_name(qualified_name)
 
     def bind_Type_from_qualified_name(self, qualified_name: str) -> Type:
-        result = self.resolve(qualified_name)
+        result = self.resolve_type(qualified_name)
 
         func = {
             ResolvedEnum: lambda _: int,
-            ResolvedUnion: lambda _: Union,
-            ResolvedStruct: lambda _: Tuple,
-            Redirect: self.bind_Type_from_Redirect,
+            ResolvedUnion: lambda _: SkipValidationType,
+            ResolvedStruct: lambda _: SkipValidationType,
+            RedirectForType: self.bind_Type_from_Redirect, # type: ignore
             UnresolvedFieldType: self.bind_Type_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
             raise NotImplementedError(f"not support {type(result)} yet.")
 
-        return func(result)  # type: ignore [operator, Cannot call function of unknown type]
+        return func(result)  # type: ignore [operator, Cannot call function of unknown type, arg-type]
 
-    def bind_Type_from_Redirect(self, result: Redirect) -> Type:  # type: ignore [return, Missing return statement]
+    def bind_Type_from_Redirect(self, result: RedirectForType) -> Type:  # type: ignore [return, Missing return statement]
         binder = get_binder(result.filename, self.thrift_paths)
         return binder.bind_Type_from_qualified_name(result.qualified_name)
 
-    def bind_Type_from_UnresolvedFieldType(
-        self, result: UnresolvedFieldType
-    ) -> Type:
+    def bind_Type_from_UnresolvedFieldType(self, result: UnresolvedFieldType) -> Type:
         return self.bind_Type_from_field_type(result.ctx)
 
     def bind_Type_from_container_type(
         self, ctx: thriftParser.Container_typeContext
-    ) -> Type: 
+    ) -> Type:
         if ctx.list_type():
-            return List[self.bind_Type_from_field_type(ctx.list_type().field_type())] # type: ignore
+            return List[self.bind_Type_from_field_type(ctx.list_type().field_type())]  # type: ignore
         elif ctx.map_type():
-            return Dict[ # type: ignore
+            return Dict[  # type: ignore
                 self.bind_Type_from_field_type(ctx.map_type().field_type()[0]),
                 self.bind_Type_from_field_type(ctx.map_type().field_type()[1]),
             ]
         elif ctx.set_type():
-            return Set[self.bind_Type_from_field_type(ctx.set_type().field_type())] # type: ignore
+            return Set[self.bind_Type_from_field_type(ctx.set_type().field_type())]  # type: ignore
         else:
             raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
     def bind_value_from_const_value(
         self, ctx: thriftParser.Const_valueContext, type_: Type
-    ) -> Union[int, str, bool, float, None]:
-        if type_ == Tuple:
-            return ctx.getText()
-        elif type_ == Union:
+    ) -> Union[int, str, bool, float]:
+        if type_ == SkipValidationType:
             return ctx.getText()
         elif ctx.integer() and type_ in {int, bool, float}:
             return self.bind_value_from_integer(ctx.integer(), type_)
@@ -888,40 +927,54 @@ class Binder:
         elif ctx.IDENTIFIER():
             return self.bind_value_from_IDENTIFIER(ctx.IDENTIFIER(), type_)
         elif ctx.const_list():
-            return self.bind_value_from_const_list(ctx.const_list(), type_)
+            return "".join(self.bind_value_from_const_list(ctx.const_list(), type_))
         elif ctx.const_map():
-            return self.bind_value_from_const_map(ctx.const_map(), type_)
+            return "".join(self.bind_value_from_const_map(ctx.const_map(), type_))
         else:
             raise NotImplementedError(f"not support {ctx.getText()} yet.")
 
+    def _string_join(
+        self, delimiter: str, parts: Iterable[str]
+    ) -> Generator[str, None, None]:
+        if delimiter == "":
+            yield from parts
+        else:
+            first = True
+            for part in parts:
+                if first:
+                    first = False
+                else:
+                    yield delimiter
+                yield part
+
     def bind_value_from_const_list(
         self, ctx: thriftParser.Const_listContext, type_: Type
-    ) -> str:
-        text_ = "["
-        for i in ctx.const_value():
-            sub_type_ = type_.__args__[0]
-            text_ += str(self.bind_value_from_const_value(i, sub_type_))
-            text_ += ", "
-        text_ = text_[:-2]
-        text_ += "]"
-        return text_
+    ) -> Generator[str, None, None]:
+        item_type = get_list_item_type(type_)
+        yield "["
+        yield from self._string_join(
+            ", ",
+            map(
+                lambda value: str(self.bind_value_from_const_value(value, item_type)),
+                ctx.const_value(),
+            ),
+        )
+        yield "]"
 
     def bind_value_from_const_map(
         self, ctx: thriftParser.Const_mapContext, type_: Type
-    ) -> str:
-        text_ = "{"
-        for entry in ctx.const_map_entry():
-            key_ = entry.const_value()[0]
-            value_ = entry.const_value()[1]
-            key_type_ = type_.__args__[0]
-            value_type_ = type_.__args__[1]
-            text_ += str(self.bind_value_from_const_value(key_, key_type_))
-            text_ += ":"
-            text_ += str(self.bind_value_from_const_value(value_, value_type_))
-            text_ += ", "
-        text_ = text_[:-2]
-        text_ += "}"
-        return text_
+    ) -> Generator[str, None, None]:
+        yield "{"
+        yield from self._string_join(
+            ", ",
+            map(
+                lambda entry: f"{self.bind_value_from_const_value(entry.const_value()[0], get_map_key_type(type_))}"
+                ":"
+                f"{self.bind_value_from_const_value(entry.const_value()[1], get_map_value_type(type_))}",
+                ctx.const_map_entry(),
+            ),
+        )
+        yield "}"
 
     def bind_value_from_DOUBLE(self, ctx: TerminalNode) -> float:
         return float(ctx.getText())
@@ -931,28 +984,27 @@ class Binder:
 
     def bind_value_from_IDENTIFIER(
         self, ctx: TerminalNode, type_: Type
-    ) -> Union[str, float, None]:
+    ) -> Union[int, str, bool, float]:
         qualified_name = ctx.getText()
         return self.bind_value_from_qualified_name(qualified_name, type_)
 
     def bind_value_from_qualified_name(
         self, qualified_name: str, type_: Type
-    ) -> Union[int, str, bool, float, None]:
-        result = self.resolve(qualified_name)
+    ) -> Union[int, str, bool, float]:
+        result = self.resolve_value(qualified_name)
 
         func = {
-            ResolvedConstValue: lambda x, _: cast(ResolvedConstValue, x).value,
-            Redirect: self.bind_value_from_Redirect,  # type: ignore [dict-item]
+            ValueResolved: lambda x, _: cast(ValueResolved, x).value,
+            RedirectForValue: self.bind_value_from_Redirect,  # type: ignore [dict-item]
             UnresolvedConstValue: self.bind_value_from_UnresolvedConstValue,
         }.get(type(result), None)
-        if func is not None and result is not None:
-            return func(result, type_)  # type: ignore [arg-type]
+        if func is not None:
+            return func(result, type_)  # type: ignore [operator]
         else:
-            # TODO failed to resolve
-            return None
+            raise ValueError(f"{type(result)} is not handled.")
 
     def bind_value_from_Redirect(  # type: ignore [return, Missing return statement]
-        self, result: Redirect, type_: Type
+        self, result: RedirectForType, type_: Type
     ) -> Union[int, str, bool, float, None]:
         binder = get_binder(result.filename, self.thrift_paths)
         return binder.bind_value_from_qualified_name(result.qualified_name, type_)
@@ -1029,14 +1081,14 @@ class Binder:
     def bind_HyperType_from_qualified_name(
         self, qualified_name: str
     ) -> Generator[Union[HyperTypeTextToken, HyperTypeUrnToken], None, None]:
-        result = self.resolve(qualified_name)
+        result = self.resolve_type(qualified_name)
 
         func = {
             ResolvedEnum: self.bind_HyperType_from_Resolved,
             ResolvedStruct: self.bind_HyperType_from_Resolved,
             ResolvedUnion: self.bind_HyperType_from_Resolved,
             ResolvedException: self.bind_HyperType_from_Resolved,
-            Redirect: self.bind_HyperType_from_Redirect,
+            RedirectForType: self.bind_HyperType_from_Redirect,
             UnresolvedFieldType: self.bind_HyperType_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
@@ -1045,7 +1097,7 @@ class Binder:
         yield from func(result)  # type: ignore [operator, Cannot call function of unknown type]
 
     def bind_HyperType_from_Redirect(
-        self, result: Redirect
+        self, result: RedirectForType
     ) -> Generator[Union[HyperTypeTextToken, HyperTypeUrnToken], None, None]:
         binder = get_binder(result.filename, self.thrift_paths)
         yield from binder.bind_HyperType_from_qualified_name(result.qualified_name)
@@ -1056,7 +1108,7 @@ class Binder:
         yield from self.bind_HyperType_from_field_type(result.ctx)
 
     def bind_HyperType_from_Resolved(
-        self, result: Resolved
+        self, result: TypeResolved
     ) -> Generator[Union[HyperTypeTextToken, HyperTypeUrnToken], None, None]:
         yield HyperTypeUrnToken(result.native_data_type, result.urn)
 
@@ -1119,7 +1171,7 @@ class Binder:
     def bind_SchemaFieldDataType_from_qualified_name(
         self, qualified_name: str
     ) -> SchemaFieldDataType:
-        result = self.resolve(qualified_name)
+        result = self.resolve_type(qualified_name)
         assert result is not None
 
         func = {
@@ -1127,7 +1179,7 @@ class Binder:
             ResolvedStruct: lambda _: SchemaFieldDataType(RecordType()),
             ResolvedUnion: self.bind_SchemaFieldDataType_from_ResolvedUnion,  # type: ignore [dict-item]
             ResolvedException: lambda _: SchemaFieldDataType(RecordType()),
-            Redirect: self.bind_SchemaFieldDataType_from_Redirect,  # type: ignore [dict-item]
+            RedirectForType: self.bind_SchemaFieldDataType_from_Redirect,  # type: ignore [dict-item]
             UnresolvedFieldType: self.bind_SchemaFieldDataType_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
@@ -1141,7 +1193,7 @@ class Binder:
         return SchemaFieldDataType(UnionType(result.subtypes))
 
     def bind_SchemaFieldDataType_from_Redirect(  # type: ignore [return, Missing return statement]
-        self, result: Redirect
+        self, result: RedirectForType
     ) -> SchemaFieldDataType:
         binder = get_binder(result.filename, self.thrift_paths)
         return binder.bind_SchemaFieldDataType_from_qualified_name(
@@ -1253,7 +1305,8 @@ class ThriftSource(Source):
                     filename, thrift_paths or tuple()
                 ).bind_MCPs_from_Document(tree)
             except Exception as e:
-                self.report.errors.append(f"Error: {e}")
+                if self.config.explicit:
+                    raise e
         elif os.path.isdir(filename):
             for f in os.listdir(filename):
                 yield from self.parse(os.path.join(filename, f), thrift_paths)

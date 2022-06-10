@@ -20,7 +20,7 @@ def gen_thrift_mcps_and_verify(
         @freeze_time(FROZEN_TIME)
         def wrapper(tmp_path: pathlib.Path, pytestconfig: Config) -> None:
             source = ThriftSource.create(
-                {"filename": input_file},
+                {"filename": input_file, "explicit": True},
                 PipelineContext(run_id="test_run_id"),
             )
             mcp_objects = [wu.metadata.to_obj() for wu in source.get_workunits()]
