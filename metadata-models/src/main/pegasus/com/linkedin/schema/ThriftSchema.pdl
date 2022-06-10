@@ -13,5 +13,4 @@ record ThriftSchema {
   fields: array[ThriftField]
   annotations: optional array[ThriftAnnotation]
   namespace_: optional map[string, string]
-
 }
