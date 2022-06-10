@@ -1307,6 +1307,7 @@ class ThriftSource(Source):
             except Exception as e:
                 if self.config.explicit:
                     raise e
+                self.report.errors.append(f"Error: {e}")
         elif os.path.isdir(filename):
             for f in os.listdir(filename):
                 yield from self.parse(os.path.join(filename, f), thrift_paths)
