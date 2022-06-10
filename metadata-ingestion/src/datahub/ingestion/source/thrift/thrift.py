@@ -883,7 +883,7 @@ class Binder:
             ResolvedEnum: lambda _: int,
             ResolvedUnion: lambda _: SkipValidationType,
             ResolvedStruct: lambda _: SkipValidationType,
-            RedirectForType: self.bind_Type_from_Redirect, # type: ignore
+            RedirectForType: self.bind_Type_from_Redirect,  # type: ignore
             UnresolvedFieldType: self.bind_Type_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
@@ -1307,6 +1307,7 @@ class ThriftSource(Source):
             except Exception as e:
                 if self.config.explicit:
                     raise e
+                self.report.errors.append(f"Error: {e}")
         elif os.path.isdir(filename):
             for f in os.listdir(filename):
                 yield from self.parse(os.path.join(filename, f), thrift_paths)
