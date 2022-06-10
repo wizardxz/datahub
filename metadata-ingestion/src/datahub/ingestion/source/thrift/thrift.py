@@ -883,7 +883,7 @@ class Binder:
             ResolvedEnum: lambda _: int,
             ResolvedUnion: lambda _: SkipValidationType,
             ResolvedStruct: lambda _: SkipValidationType,
-            RedirectForType: self.bind_Type_from_Redirect, # type: ignore
+            RedirectForType: self.bind_Type_from_Redirect,  # type: ignore
             UnresolvedFieldType: self.bind_Type_from_UnresolvedFieldType,
         }.get(type(result))
         if func is None:
